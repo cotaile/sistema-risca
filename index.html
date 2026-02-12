@@ -1,0 +1,3275 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Risca | Sistema de Revendas e Análise de Performance</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons+Round"
+      rel="stylesheet"
+    />
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="controles-visuais.js"></script>
+    <script src="mascaras.js"></script>
+
+    <link href="visual.css" rel="stylesheet"/>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    
+    <style>
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px; /* Espaço entre ícone e texto */
+        }
+        .btn .material-icons-round {
+            font-size: 18px; /* Tamanho padrão do ícone em botões */
+        }
+        .btn-sm .material-icons-round {
+            font-size: 16px; /* Ícone menor para botões pequenos */
+        }
+    </style>
+  </head>
+  <body>
+    <div id="toast-container" class="toast-container"></div>
+
+    <header class="top-bar">
+      <div class="brand">
+        
+        <h1>
+          <span class="material-icons-round">local_pharmacy</span> 
+          Risca
+        </h1>
+        <h6>Sistema de Revendas e Análise de Performance</h6>
+      </div>
+      <div class="user-profile" onclick="toggleSettings()">
+        <div style="text-align: right; line-height: 1.2">
+          <div style="font-weight: 600; font-size: 0.9rem" id="topo-usuario">
+            Carregando...
+          </div>
+          <div
+            style="font-size: 0.75rem; color: var(--text-muted)"
+            id="topo-cargo"
+          >
+            ...
+          </div>
+        </div>
+        <div class="avatar" id="avatar-letras">U</div>
+      </div>
+    </header>
+
+    <div class="nav-container">
+      <div class="tabs-wrapper">
+        <button class="tab-btn active" onclick="mudarAba('tab-vendas')">
+          <span class="material-icons-round">shopping_cart</span> Nova Venda
+        </button>
+        <button class="tab-btn" onclick="mudarAba('tab-posvenda')">
+          <span class="material-icons-round">history</span> Pós-Venda
+        </button>
+        <button class="tab-btn" onclick="mudarAba('tab-performance')">
+          <span class="material-icons-round">bar_chart</span> Performance
+        </button>
+        <button
+          class="tab-btn hidden"
+          id="btn-tab-controle"
+          onclick="mudarAba('tab-controle')"
+        >
+          <span class="material-icons-round">settings</span> Controle
+        </button>
+      </div>
+    </div>
+
+    <div
+      id="modal-login"
+      class="modal-overlay"
+      style="display: flex; z-index: 9999"
+    >
+      <div class="modal-box" style="width: 350px">
+        <div class="card-header" style="color: #4f46e5;">
+        
+          <h1>
+          <span class="material-icons-round">local_pharmacy</span> 
+          Risca
+        </h1>
+        </div>
+        <div class="form-group">
+          <label>Login</label
+          ><input type="text" id="login-user" value="marcio" />
+        </div>
+        <div class="form-group">
+          <label style="width: 100%; margin-top: 20px;">Senha</label
+          ><input type="password" id="login-pass" value="123"  />
+        </div>
+        <button
+          class="btn btn-primary"
+          style="width: 100%; margin-top: 20px;"
+          onclick="realizarLogin()"
+        >
+          <span class="material-icons-round">login</span> Entrar
+        </button>
+      </div>
+    </div>
+
+    <main
+      class="main-content"
+      id="main-content"
+      style="filter: blur(5px); pointer-events: none"
+    >
+      
+    <div id="tab-vendas" class="tab-pane active">
+
+      <div style="display: flex; justify-content: center; margin: 30px 0;">
+        <button id="btn-venda" onclick="toggleAreaVenda()" class="btn-nova-venda-lindo">
+            <span id="icone-btn-venda" class="material-icons-round">add_shopping_cart</span>
+            <span id="text-btn-venda">NOVA VENDA</span>
+        </button>
+      </div>                                        
+
+      <div id="area-nova-venda" style="display: none; transition: all 0.3s ease;">
+        <div class="card">
+          <div class="card-header"><h3>1. Identificação do Cliente</h3></div>
+          <div
+            class="filter-bar"
+            style="
+              margin-bottom: 0;
+              background: white;
+              border: none;
+              padding: 0;
+            "
+          >
+            <div class="form-group" style="flex: 2">
+              <input
+                type="text"
+                id="busca-cpf"
+                placeholder="Digite o CPF (000.000.000-00)"
+                maxlength="14"
+                onkeydown="if(event.key === 'Enter') buscarCliente()"
+                oninput="mascaraCPF(this)"
+              />
+            </div>
+            <button class="btn btn-primary" onclick="buscarCliente()">
+              <span class="material-icons-round">search</span> Buscar
+            </button>
+          </div>
+          <div
+            id="resultado-cliente"
+            style="margin-top: 15px; font-weight: 600"
+          ></div>
+          <button
+            id="btn-novo-cadastro"
+            class="btn btn-secondary hidden"
+            style="margin-top: 15px; width: 100%"
+            onclick="abrirModalCadastro()"
+          >
+            <span class="material-icons-round">person_add</span> Cliente não
+            encontrado. Cadastrar Novo?
+          </button>
+        </div>
+
+        <div id="area-carrinho" class="card hidden">
+          <div class="card-header">
+            <h3>2. Detalhes da Venda</h3>
+            <span style="font-size: 0.8rem; color: var(--text-muted)"
+              >Vendedor: <strong id="lbl-vendedor-atual">...</strong></span
+            >
+          </div>
+
+          <div class="row-config">
+            <div class="form-group">
+              <label>Data da Venda</label>
+              <input type="date" id="venda-data" />
+            </div>
+            <div class="form-group">
+              <label>Canal de Venda</label>
+              <select id="venda-tipo">
+                <option value="Loja Física">Loja Física</option>
+                <option value="Online/App">Online/App</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Tabela de Preço</label>
+              <select id="venda-tabela">
+                <option value="Preço Loja">Preço Loja</option>
+                <option value="PBM">PBM</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="filter-bar">
+            <div class="form-group" style="flex: 3">
+              <label>Produto</label>
+              <select
+                id="select-produto"
+                onchange="atualizarPrecoInput('padrao')"
+              ></select>
+            </div>
+            <div class="form-group" style="flex: 1">
+              <label>Preço Unit.</label>
+              <input type="text" id="preco-custom-produto" oninput="formatarMoeda(this)" />
+            </div>
+            <div class="form-group" style="flex: 1">
+              <label>Qtd</label>
+              <input type="number" id="qtd-produto" value="1" min="1" />
+            </div>
+            <button
+              class="btn btn-primary"
+              style="height: 42px"
+              onclick="adicionarAoCarrinho()"
+            >
+              <span class="material-icons-round">add</span> Add
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Produto</th>
+                  <th>Preço Unit.</th>
+                  <th>Qtd</th>
+                  <th>Total</th>
+                  <th>Ação</th>
+                </tr>
+              </thead>
+              <tbody id="lista-carrinho"></tbody>
+            </table>
+          </div>
+          <div
+            style="
+              text-align: right;
+              font-size: 1.5rem;
+              font-weight: 700;
+              color: var(--primary);
+              margin-top: 20px;
+            "
+            id="valor-total-venda"
+          >
+            R$ 0,00
+          </div>
+          
+          <div class="d-flex justify-content-between mt-3">
+             <button class="btn btn-primary" onclick="finalizarVendaNormal()">
+                <span class="material-icons-round">check</span> FINALIZAR VENDA
+             </button>
+          </div>
+
+        </div>
+      </div>
+      
+    <div class="card" style="margin-top: 30px">
+          <div class="card-header"><h3>Histórico de Vendas</h3></div>
+          
+          <div class="card mb-4 shadow-sm" style="border: 1px solid #e2e8f0;">
+    <div class="card-body p-3 bg-light" style="border-radius: 6px;">
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; align-items: end;">
+
+            <div>
+                <label style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700; margin-bottom: 4px; display: block;">Venda (De)</label>
+                <input type="date" id="filtro-venda-ini" class="form-control form-control-sm" style="border-color: #cbd5e1;">
+            </div>
+
+            <div>
+                <label style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700; margin-bottom: 4px; display: block;">vENDA (Até)</label>
+                <input type="date" id="filtro-venda-fim" class="form-control form-control-sm" style="border-color: #cbd5e1;">
+            </div>
+
+            <div style="min-width: 160px;">
+                <label style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700; margin-bottom: 4px; display: block;">CPF Cliente</label>
+                <div class="input-group input-group-sm">
+                    <input type="text" id="filtro-venda-cpf" class="form-control" placeholder="000.000.000-00" maxlength="14" oninput="mascaraCPF(this)" style="border-color: #cbd5e1;">
+                </div>
+            </div>
+
+            <div>
+                <label style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700; margin-bottom: 4px; display: block;">Tipo Venda</label>
+                <select id="filtro-origem-historico" class="form-select form-select-sm" style="border-color: #cbd5e1;">
+                    <option value="TODOS">Todas</option>
+                    <option value="REVENDA">Revenda</option>
+                    <option value="NORMAL">Normal</option>
+                </select>
+            </div>
+
+            <div>
+                <label style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700; margin-bottom: 4px; display: block;">Status</label>
+                <select id="filtro-status-historico" class="form-select form-select-sm" style="border-color: #cbd5e1;">
+                    <option value="TODOS">Todos</option>
+                    <option value="PENDENTE">🔴 Pendente</option>
+                    <option value="FINALIZADO">🟢 Finalizado</option>
+                    <option value="ANDAMENTO">🟠 Andamento</option>
+                </select>
+            </div>
+
+            <div>
+                <button class="btn btn-primary btn-sm w-100" onclick="filtrarHistoricoGeral(1)" style="font-weight: 600;">
+                    <span class="material-icons-round" style="font-size: 16px;">filter_alt</span>
+                    Filtrar
+                </button>
+            </div>
+
+        </div> <hr style="margin: 15px 0; border-color: #e2e8f0;">
+
+        <div class="d-flex justify-content-between align-items-center">
+            
+            <div style="font-size: 0.85rem; color: #64748b;">
+                <span class="material-icons-round" style="font-size: 14px; vertical-align: middle;">list</span>
+                Exibindo resultados
+            </div>
+
+            <div class="d-flex align-items-center bg-white border rounded shadow-sm px-1 py-1">
+                <button class="btn btn-light btn-sm" onclick="mudarPaginaHistorico(-1)" id="btn-ant" title="Anterior" style="border:none;">
+                    <span class="material-icons-round text-primary">chevron_left</span>
+                </button>
+                
+                <span id="info-paginacao" style="font-size: 0.8rem; font-weight: 700; color: #334155; padding: 0 15px; min-width: 80px; text-align: center;">
+                    ...
+                </span>
+                
+                <button class="btn btn-light btn-sm" onclick="mudarPaginaHistorico(1)" id="btn-prox" title="Próximo" style="border:none;">
+                    <span class="material-icons-round text-primary">chevron_right</span>
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div id="resumo-contador-historico" style="margin-top: 10px;margin-bottom: 20px; font-weight: 600; color: #475569; font-size: 0.9rem; text-align: right; padding-right: 5px;">
+            </div>
+
+<div class="table-responsive bg-white shadow-sm rounded border">
+    <table class="table table-hover mb-0 align-middle">
+        <thead style="background-color: #f8fafc;">
+            <tr>
+                <th style="font-size: 0.8rem; text-transform: uppercase; color: #64748b; font-weight: 700;">ID</th>
+                <th style="font-size: 0.8rem; text-transform: uppercase; color: #64748b; font-weight: 700;">Data</th>
+                <th style="font-size: 0.8rem; text-transform: uppercase; color: #64748b; font-weight: 700;">Tipo</th>
+                <th style="font-size: 0.8rem; text-transform: uppercase; color: #64748b; font-weight: 700;">Cliente</th>
+                <th style="font-size: 0.8rem; text-transform: uppercase; color: #64748b; font-weight: 700;">Total</th>
+                <th style="font-size: 0.8rem; text-transform: uppercase; color: #64748b; font-weight: 700;">Status Atendimento</th>
+                <th style="text-align: right; padding-right: 20px;">Ação</th>
+            </tr>
+        </thead>
+        <tbody id="tabela-historico">
+            </tbody>
+    </table>
+</div>
+
+          
+    </div>
+
+    </div>
+
+      <div id="tab-posvenda" class="tab-pane">
+        <div class="card shadow-sm" style="border: 1px solid #e2e8f0;">
+          
+          <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+              <h3>Painel de Follow-up (Pós-Venda)</h3>
+          </div>
+
+          <div class="card-body p-3">
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; align-items: end;">
+
+                <div>
+                    <label style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700; margin-bottom: 4px; display: block;">Venda (De)</label>
+                    <input type="date" id="filtro-pos-ini" class="form-control form-control-sm" style="border-color: #cbd5e1;">
+                </div>
+
+                <div>
+                    <label style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700; margin-bottom: 4px; display: block;">Venda (Até)</label>
+                    <input type="date" id="filtro-pos-fim" class="form-control form-control-sm" style="border-color: #cbd5e1;">
+                </div>
+
+                <div style="min-width: 160px;">
+                    <label style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700; margin-bottom: 4px; display: block;">CPF Cliente</label>
+                    <input type="text" id="filtro-pos-cpf" class="form-control form-control-sm" placeholder="000.000.000-00" maxlength="14" oninput="mascaraCPF(this)" style="border-color: #cbd5e1;">
+                </div>
+
+                <div>
+    <label style="font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700; margin-bottom: 4px; display: block;">Status Follow-up</label>
+    <select id="filtro-pos-status" class="form-select form-select-sm" style="border-color: #cbd5e1;">
+        <option value="TODOS">Todos</option>
+        <option value="PENDENTE">🟡 Aguardando / Pendente</option>
+        <option value="ANDAMENTO">🟠 Em Andamento</option>
+        <option value="COM_VENDA">🟢 Finalizado (Com Venda)</option>
+        <option value="SEM_VENDA">🔴 Finalizado (Sem Venda)</option>
+    </select>
+</div>
+
+                <div>
+                    <button class="btn btn-primary btn-sm w-100" onclick="carregarListaPosVenda(1)" style="font-weight: 600;">
+                        <span class="material-icons-round" style="font-size: 16px;">filter_alt</span>
+                        Filtrar
+                    </button>
+                </div>
+
+            </div> <hr style="margin: 15px 0; border-color: #e2e8f0;">
+
+            <div class="d-flex justify-content-between align-items-center">
+                <div style="font-size: 0.85rem; color: #64748b;">
+                    <span class="material-icons-round" style="font-size: 14px; vertical-align: middle;">list</span>
+                    Exibindo resultados
+                </div>
+
+                <div class="d-flex align-items-center bg-white border rounded shadow-sm px-1 py-1">
+                    <button class="btn btn-light btn-sm border-0" onclick="mudarPaginaPos(-1)" id="btn-pos-ant" title="Anterior">
+                        <span class="material-icons-round text-primary">chevron_left</span>
+                    </button>
+                    
+                    <span id="info-paginacao-pos" style="font-size: 0.8rem; font-weight: 700; color: #334155; padding: 0 15px; min-width: 80px; text-align: center;">
+                        ...
+                    </span>
+                    
+                    <button class="btn btn-light btn-sm border-0" onclick="mudarPaginaPos(1)" id="btn-pos-prox" title="Próximo">
+                        <span class="material-icons-round text-primary">chevron_right</span>
+                    </button>
+                </div>
+            </div>
+
+          </div> </div>
+
+          <div id="resumo-contador-pos" style="margin-top: 10px;margin-bottom: 20px; font-weight: 600; color: #475569; font-size: 0.9rem; text-align: right; padding-right: 5px;">
+            </div>
+
+        <div class="table-responsive bg-white shadow-sm rounded border mt-3">
+            <table class="table table-hover mb-0 align-middle">
+              <thead style="background-color: #f8fafc;">
+                <tr>
+                  <th style="font-size: 0.8rem; text-transform: uppercase; color: #64748b; font-weight: 700;">ID Venda</th>
+                  <th style="font-size: 0.8rem; text-transform: uppercase; color: #64748b; font-weight: 700;">Cliente</th>
+                  <th style="font-size: 0.8rem; text-transform: uppercase; color: #64748b; font-weight: 700;">Data Venda</th>
+                  <th style="font-size: 0.8rem; text-transform: uppercase; color: #64748b; font-weight: 700;">Status Follow-up</th>
+                  <th style="font-size: 0.8rem; text-transform: uppercase; color: #64748b; font-weight: 700;">Resp. Atual</th>
+                  <th style="text-align: right; padding-right: 20px;">Ação</th>
+                </tr>
+              </thead>
+              <tbody id="tabela-followup">
+                  </tbody>
+            </table>
+        </div>
+
+      </div>
+
+      <div id="tab-performance" class="tab-pane">
+        <div class="card" style="padding: 20px">
+          <div
+            class="filter-bar"
+            style="margin: 0; border: none; padding: 0; background: white"
+          >
+            <div class="form-group">
+              <label>Analisar de:</label><input type="date" id="kpi-ini" />
+            </div>
+            <div class="form-group">
+              <label>Até:</label><input type="date" id="kpi-fim" />
+            </div>
+            <button
+              class="btn btn-primary"
+              style="height: 42px"
+              onclick="calcularPerformance()"
+            >
+              <span class="material-icons-round">refresh</span> Atualizar KPIs
+            </button>
+            <button
+  class="btn btn-danger" 
+  style="height: 42px; margin-left: 10px; color: #f8fafc; background-color: #ef4444; border:none;"
+  onclick="exportarRelatorioPDF()"
+>
+  <span class="material-icons-round" style="margin-right: 5px;">picture_as_pdf</span>
+  Relatório PDF
+</button>
+          </div>
+        </div>
+        <div class="kpi-grid">
+          <div class="kpi-card" style="border-bottom: 4px solid var(--primary)">
+            <div class="kpi-title">Taxa de Conversão</div>
+            <div class="kpi-value" id="kpi-conversao">0%</div>
+            <span class="material-icons-round kpi-icon">trending_up</span>
+          </div>
+          <div class="kpi-card" style="border-bottom: 4px solid var(--success)">
+            <div class="kpi-title">Faturamento Gerado</div>
+            <div
+              class="kpi-value"
+              id="kpi-faturamento"
+              style="color: var(--success)"
+            >
+              R$ 0,00
+            </div>
+            <span class="material-icons-round kpi-icon">attach_money</span>
+          </div>
+          <div class="kpi-card" style="border-bottom: 4px solid #7c3aed">
+            <div class="kpi-title">Revendas Realizadas</div>
+            <div class="kpi-value" id="kpi-revendas" style="color: #7c3aed">
+              0
+            </div>
+            <span class="material-icons-round kpi-icon">check_circle</span>
+          </div>
+          <div class="kpi-card" style="border-bottom: 4px solid var(--danger)">
+            <div class="kpi-title">Perdas Totais</div>
+            <div class="kpi-value" id="kpi-perdas" style="color: var(--danger)">
+              0
+            </div>
+            <span class="material-icons-round kpi-icon">thumb_down</span>
+          </div>
+          <div
+            class="kpi-card"
+            style="border-bottom: 4px solid var(--secondary)"
+          >
+            <div class="kpi-title">Total Contatos</div>
+            <div class="kpi-value" id="kpi-total">0</div>
+            <span class="material-icons-round kpi-icon">done_all</span>
+          </div>
+
+          <div
+            class="kpi-card"
+            style="border-bottom: 4px solid var(--secondary)"
+          >
+            <div class="kpi-title">Conversão por Canal</div>
+            <div class="kpi-value" id="kpi-total">
+              <div id="chart-canais">
+                <p>Aguardando dados...</p>
+              </div>
+            </div>
+            <span class="material-icons-round kpi-icon">pie_chart</span>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px">
+          <div class="card">
+            <div class="card-header"><h3>Motivos de Perda</h3></div>
+            <div id="chart-motivos"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h3>Ranking de Atendentes</h3></div>
+            <div class="table-responsive">
+              <table>
+                <thead></thead>
+                <div class="table-responsive">
+                  <table class="table-ranking">
+                    <thead>
+                      <tr>
+                        <th style="width: 50px">Pos.</th>
+                        <th style="width: 50px">Atendente</th>
+                        <th>Atendimentos</th>
+                        <th style="text-align: center">Vendas</th>
+                        <th>Conversão</th>
+                        <th>Faturamento Total</th>
+                        <th style="text-align: right">Ticket Médio</th>
+                      </tr>
+                    </thead>
+                    <tbody id="ranking-atendentes"></tbody>
+                  </table>
+                </div>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
+
+      <div id="tab-controle" class="tab-pane">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px">
+          <div class="card">
+            <div class="card-header">
+              <h3>Gerenciar Produtos</h3>
+              <span
+                class="material-icons-round"
+                style="color: var(--text-muted)"
+                >inventory_2</span
+              >
+            </div>
+            <div
+              class="filter-bar"
+              style="
+                background: #f8fafc;
+                border: 1px solid #ddd;
+                padding: 10px;
+                display: block;
+              "
+            >
+              <input type="hidden" id="prod-id-edit" />
+              <div class="form-group" style="margin-bottom: 10px">
+                <label>Nome</label>
+                <input type="text" id="prod-nome" />
+              </div>
+              
+              <div class="form-group" style="margin-bottom: 10px">
+                <label>Preço Padrão</label>
+                <input 
+                    type="text" 
+                    id="input-preco-padrao" 
+                    class="form-control" 
+                    placeholder="R$ 0,00" 
+                    oninput="formatarMoeda(this)"
+                >
+              </div>
+
+              <div style="display: flex; gap: 5px">
+                <button
+                  class="btn btn-primary"
+                  style="flex: 1"
+                  onclick="salvarProduto()"
+                >
+                  <span class="material-icons-round">save</span> Salvar</button
+                ><button
+                  class="btn btn-secondary"
+                  onclick="limparFormProduto()"
+                >
+                  <span class="material-icons-round">cleaning_services</span> Limpar
+                </button>
+              </div>
+            </div>
+            <div
+              class="table-responsive"
+              style="max-height: 300px; overflow-y: auto"
+            >
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Nome</th>
+                    <th>Preço</th>
+                    <th>Ação</th>
+                  </tr>
+                </thead>
+                <tbody id="tabela-gestao-produtos"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <h3>Gerenciar Usuários</h3>
+              <span
+                class="material-icons-round"
+                style="color: var(--text-muted)"
+                >people</span
+              >
+            </div>
+            <div
+              class="filter-bar"
+              style="
+                background: #f8fafc;
+                border: 1px solid #ddd;
+                padding: 10px;
+                display: block;
+              "
+            >
+              <input type="hidden" id="user-id-edit" />
+              <div
+                class="row-config"
+                style="margin-bottom: 10px; padding: 0; border: none"
+              >
+                <div class="form-group">
+                  <label>Nome</label><input type="text" id="user-nome" />
+                </div>
+                <div class="form-group">
+                  <label>Login</label><input type="text" id="user-login" />
+                </div>
+              </div>
+              <div
+                class="row-config"
+                style="margin-bottom: 10px; padding: 0; border: none"
+              >
+                <div class="form-group" style="position: relative">
+                  <label>Senha</label>
+                  <input
+                    type="password"
+                    id="user-senha"
+                    placeholder="Digite a senha"
+                    style="padding-right: 40px"
+                  />
+
+                  <span
+                    class="material-icons-round"
+                    id="icon-ver-senha"
+                    onclick="toggleVisualizarSenha()"
+                    style="
+                      position: absolute;
+                      right: 10px;
+                      top: 35px;
+                      cursor: pointer;
+                      color: #888;
+                      user-select: none;
+                    "
+                  >
+                    visibility
+                  </span>
+                </div>
+                <div class="form-group">
+                  <label>Perfil</label
+                  ><select id="user-perfil">
+                    <option value="OPERACIONAL">Operacional</option>
+                    <option value="ADMIN">Admin</option>
+                  </select>
+                </div>
+              </div>
+              <div style="display: flex; gap: 5px">
+                <button
+                  class="btn btn-primary"
+                  style="flex: 1"
+                  onclick="salvarUsuario()"
+                >
+                  <span class="material-icons-round">save</span> Salvar</button
+                ><button
+                  class="btn btn-secondary"
+                  onclick="limparFormUsuario()"
+                >
+                  <span class="material-icons-round">cleaning_services</span> Limpar
+                </button>
+              </div>
+            </div>
+            <div
+              class="table-responsive"
+              style="max-height: 300px; overflow-y: auto"
+            >
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>Login</th>
+                    <th>Perfil</th>
+                    <th>Ação</th>
+                  </tr>
+                </thead>
+                <tbody id="tabela-gestao-usuarios"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <div id="modal-atendimento" class="modal-overlay">
+      <div class="modal-box">
+        <div class="card-header">
+          <h3 id="modal-titulo">Atendimento</h3>
+          <span
+            class="material-icons-round"
+            style="cursor: pointer"
+            onclick="fecharModalAtendimento()"
+            >close</span
+          >
+        </div>
+        <div
+          id="modal-header-status"
+          style="
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+          "
+        >
+          <p><strong>Cliente:</strong> <span id="atend-cliente"></span></p>
+          <p><strong>Status:</strong> <span id="atend-status-texto"></span></p>
+          <p style="margin-top: 5px; color: #666; font-size: 0.9rem">
+            <strong>Atendente:</strong> <span id="atend-usuario-nome"></span>
+          </p>
+        </div>
+        <div
+          id="area-motivo-perda"
+          class="hidden"
+          style="
+            background: #fff5f5;
+            border: 1px solid #feb2b2;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+          "
+        >
+          <h4 style="color: var(--danger); margin-bottom: 10px">
+            Por que a venda não foi realizada?
+          </h4>
+          <div class="form-group">
+            <select id="select-motivo-perda">
+              <option value="">Selecione...</option>
+              <option>Preço Alto</option>
+              <option>Alta Médica</option>
+              <option>Esqueceu</option>
+              <option>Abandonou Tratamento</option>
+              <option>Não Respondeu</option>
+            </select>
+          </div>
+          <div style="display: flex; gap: 10px; margin-top: 10px">
+            <button
+              class="btn btn-secondary"
+              style="flex: 1"
+              onclick="cancelarFluxoPerda()"
+            >
+              <span class="material-icons-round">arrow_back</span> Voltar</button
+            ><button
+              class="btn btn-danger"
+              style="flex: 1"
+              onclick="confirmarPerda()"
+            >
+              <span class="material-icons-round">thumb_down</span> Confirmar Perda
+            </button>
+          </div>
+        </div>
+        <div id="area-acao-atendimento">
+          <div
+            class="row-config"
+            style="background: #f8fafc; padding: 10px; border-radius: 8px"
+          >
+            <div class="form-group">
+              <label>Canal Revenda</label
+              ><select id="resale-tipo">
+                <option>Loja Física</option>
+                <option>Online/App</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Tabela Revenda</label
+              ><select id="resale-tabela">
+                <option>Preço Loja</option>
+                <option>PBM</option>
+              </select>
+            </div>
+          </div>
+          <h4
+            style="margin-bottom: 10px; color: var(--primary); margin-top: 10px"
+          >
+            1. Revender Itens Anteriores?
+          </h4>
+          <div id="lista-itens-originais" style="margin-bottom: 20px"></div>
+          <h4 style="margin-bottom: 10px; color: var(--primary)">
+            2. Adicionar Novo Produto (Revenda)
+          </h4>
+          <div
+            class="filter-bar"
+            style="
+              background: #fff;
+              border: 1px solid #ddd;
+              padding: 10px;
+              display: block;
+            "
+          >
+            <div class="form-group" style="margin-bottom: 10px">
+              <label>Produto</label
+              ><select
+                id="select-produto-resale"
+                onchange="atualizarPrecoInput('resale')"
+              ></select>
+            </div>
+            <div style="display: flex; gap: 10px">
+              <div class="form-group" style="flex: 1">
+                <label>Preço Unit.</label
+                ><input type="number" id="preco-custom-resale" step="0.01" />
+              </div>
+              <div class="form-group" style="flex: 1">
+                <label>Qtd</label
+                ><input type="number" id="qtd-produto-resale" value="1" />
+              </div>
+            </div>
+            <button
+              class="btn btn-secondary"
+              style="width: 100%; margin-top: 5px"
+              onclick="adicionarAoCarrinhoResale()"
+            >
+              <span class="material-icons-round">add</span> Adicionar Item
+            </button>
+          </div>
+        </div>
+        <div
+          id="id-resumo-carrinho-resale"
+          style="
+            border-top: 1px solid var(--border);
+            padding-top: 15px;
+            margin-bottom: 20px;
+            display: none;
+          "
+        >
+          <h4>Itens da Revenda</h4>
+          <ul
+            id="resumo-carrinho-resale"
+            style="
+              font-size: 0.9rem;
+              padding-left: 20px;
+              margin-top: 5px;
+              color: var(--text-muted);
+            "
+          >
+            <li>Nenhum item selecionado.</li>
+          </ul>
+          <div style="text-align: right; font-weight: bold; margin-top: 10px">
+            Total: <span id="total-resale">R$ 0,00</span>
+          </div>
+        </div>
+        <div
+          id="botoes-acao-atendimento"
+          style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px"
+        >
+          <button
+            class="btn btn-danger"
+            style="justify-content: center"
+            onclick="iniciarFluxoPerda()"
+          >
+            <span class="material-icons-round">cancel</span> Não Efetuada
+          </button>
+          <button
+            class="btn btn-success"
+            style="justify-content: center"
+            onclick="finalizarAtendimento('COM_VENDA')"
+          >
+            <span class="material-icons-round">check_circle</span> Revenda Efetuada
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="modal-cadastro" class="modal-overlay">
+      <div class="modal-box">
+        <div class="card-header"><h3>Novo Cliente</h3></div>
+        <div class="form-group">
+          <label>CPF</label
+          ><input
+            type="text"
+            id="cad-cpf"
+            placeholder="000.000.000-00"
+            maxlength="14"
+            oninput="mascaraCPF(this)"
+          />
+        </div>
+        <div class="form-group">
+          <label>Nome</label><input type="text" id="cad-nome" />
+        </div>
+        <div class="form-group">
+          <label>Telefone</label
+          ><input
+            type="text"
+            id="cad-telefone"
+            placeholder="(00) 00000-0000"
+            maxlength="15"
+            oninput="mascaraTelefone(this)"
+          />
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 20px">
+          <button
+            class="btn btn-secondary"
+            style="flex: 1"
+            onclick="document.getElementById('modal-cadastro').style.display='none'"
+          >
+            <span class="material-icons-round">close</span> Cancelar</button
+          ><button
+            class="btn btn-primary"
+            style="flex: 1"
+            onclick="salvarCliente()"
+          >
+            <span class="material-icons-round">save</span> Salvar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="modal-settings"
+      class="modal-overlay"
+      onclick="this.style.display='none'"
+    >
+      <div class="modal-box">
+        <div
+          style="padding: 10px; cursor: pointer; color: red; display: flex; align-items: center; gap: 5px;"
+          onclick="location.reload()"
+        >
+          <span class="material-icons-round">logout</span> Sair do Sistema
+        </div>
+      </div>
+    </div>
+
+    <div id="modal-editar-cliente" class="modal-overlay">
+      <div class="modal-box" style="width: 400px">
+        <div class="card-header">
+            <h3>Editar Dados do Cliente</h3>
+            <span class="material-icons-round" style="cursor: pointer" onclick="document.getElementById('modal-editar-cliente').style.display='none'">close</span>
+        </div>
+        
+        <div class="form-group">
+            <label>Nome Completo</label>
+            <input type="text" id="edit-cli-nome" />
+        </div>
+        
+        <div class="form-group">
+            <label>Telefone / WhatsApp</label>
+            <input type="text" id="edit-cli-telefone" maxlength="15" oninput="mascaraTelefone(this)" />
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 20px">
+          <button class="btn btn-secondary" style="flex: 1" onclick="document.getElementById('modal-editar-cliente').style.display='none'">
+            <span class="material-icons-round">close</span> Cancelar
+          </button>
+          <button class="btn btn-primary" style="flex: 1" onclick="salvarEdicaoCliente()">
+            <span class="material-icons-round">save</span> Salvar Alterações
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // --- 1. CONFIGURAÇÃO SUPABASE ---
+      // SUBSTITUA COM SUAS CHAVES DO SUPABASE
+      //const SUPABASE_URL = "SUA_URL_SUPABASE";
+      //const SUPABASE_ANON_KEY = "SUA_KEY_SUPABASE";
+
+      const _supabase = supabase.createClient(
+        APPM_CONFIG.SUPABASE_URL,
+        APPM_CONFIG.SUPABASE_KEY
+      );
+
+      // --- VARIÁVEIS GLOBAIS ---
+      let usuarioLogado = null;
+      let carrinho = [];
+      let carrinhoResale = [];
+      let clienteAtual = null;
+      let vendaEmAtendimento = null;
+      let cacheItensModal = []; // Nova variável para guardar os itens temporariamente
+
+      // Arrays auxiliares para evitar muitas requisições (Cache simples)
+      let produtosCache = [];
+      let usuariosCache = [];
+      let historicoCache = [];
+      let listaDeIds = [];
+
+      // NOVAS VARIÁVEIS DE PAGINAÇÃO
+      let paginaAtualHist = 1;
+      const itensPorPaginaHist = 10; // Quantas vendas por página
+      let totalPaginasHist = 1;
+
+      // --- VARIÁVEIS GLOBAIS (Adicione junto com as outras) ---
+      let paginaAtualPos = 1;
+      const itensPorPaginaPos = 10;
+      let totalPaginasPos = 1;
+      let posVendaCache = []; // Cache específico para esta aba
+
+      let statusOriginalAtendimento = ""; // Guarda como o status estava ao abrir
+
+      // --- INICIALIZAÇÃO ---
+      window.onload = async function () {
+        // Verifica Login (simulado para este exemplo, mas consultando banco)
+        // Se não tiver login, mostra modal
+      };
+
+      // --- TOASTS ---
+      function showToast(message, type = "info") {
+        const container = document.getElementById("toast-container");
+        const toast = document.createElement("div");
+        let icon = "info";
+        if (type === "success") icon = "check_circle";
+        if (type === "error") icon = "error";
+        if (type === "warning") icon = "warning";
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `<span class="material-icons-round">${icon}</span> ${message}`;
+        container.appendChild(toast);
+        setTimeout(() => {
+          toast.classList.add("hide");
+          toast.addEventListener("animationend", () => toast.remove());
+        }, 3000);
+      }
+
+      // --- LOGIN ---
+      async function realizarLogin() {
+        const l = document.getElementById("login-user").value;
+        const s = document.getElementById("login-pass").value;
+
+        try {
+          const { data, error } = await _supabase
+            .from("usuarios")
+            .select("*")
+            .eq("login", l)
+            .eq("senha", s)
+            .maybeSingle(); // <--- ISSO RESOLVE O 406
+          if (error || !data) throw new Error("Usuário ou senha inválidos");
+
+          usuarioLogado = data;
+
+          // ATUALIZAÇÃO 1: Preencher data de hoje no campo de venda
+          const hojeISO = new Date().toISOString().split("T")[0];
+          document.getElementById("venda-data").value = hojeISO;
+
+          // ATUALIZAÇÃO 2: Mostrar nome do vendedor no label do carrinho
+          document.getElementById(
+            "lbl-vendedor-atual"
+          ).innerText = `${usuarioLogado.nome} (${usuarioLogado.login})`;
+
+          document.getElementById("modal-login").style.display = "none";
+          document.getElementById("main-content").style.filter = "none";
+          document.getElementById("main-content").style.pointerEvents = "auto";
+
+          // Configura Header
+          document.getElementById("topo-usuario").innerText =
+            usuarioLogado.nome;
+          document.getElementById("topo-cargo").innerText =
+            usuarioLogado.perfil;
+          document.getElementById("avatar-letras").innerText =
+            usuarioLogado.nome.charAt(0);
+
+          if (usuarioLogado.perfil === "ADMIN")
+            document
+              .getElementById("btn-tab-controle")
+              .classList.remove("hidden");
+
+          // Carrega Dados Iniciais
+          await carregarProdutos();
+          await carregarUsuarios(); // Se for admin
+
+          // Datas Filtros
+          const hoje = new Date().toISOString().split("T")[0];
+          document.getElementById("filtro-venda-ini").value = "2025-01-01"; // Data retroativa para teste
+          document.getElementById("filtro-venda-fim").value = hoje;
+          document.getElementById("kpi-ini").value = "2025-01-01";
+          document.getElementById("kpi-fim").value = hoje;
+
+          filtrarHistoricoGeral();
+        } catch (err) {
+          showToast(err.message, "error");
+        }
+      }
+
+      // --- DADOS DO BANCO ---
+      async function carregarProdutos() {
+        const { data } = await _supabase
+          .from("produtos")
+          .select("*")
+          .eq("ativo", true);
+        produtosCache = data || [];
+        preencherSelectProdutos("select-produto");
+        preencherSelectProdutos("select-produto-resale");
+      }
+
+      async function carregarUsuarios() {
+        const { data } = await _supabase
+          .from("usuarios")
+          .select("*")
+          .eq("ativo", true);
+        usuariosCache = data || [];
+      }
+
+
+      // --- FUNÇÕES UI ---
+      function preencherSelectProdutos(idSelect) {
+        const select = document.getElementById(idSelect);
+        select.innerHTML = '<option value="">Selecione...</option>';
+        
+
+        produtosCache.forEach(
+          
+          (p) =>
+            (
+              select.innerHTML += `<option value="${p.id}" data-preco="${p.preco_padrao}">${p.nome}</option>`
+            )
+        );
+      }
+
+      function mudarAba(idAba) {
+        document
+          .querySelectorAll(".tab-pane")
+          .forEach((div) => div.classList.remove("active"));
+        document
+          .querySelectorAll(".tab-btn")
+          .forEach((btn) => btn.classList.remove("active"));
+        document.getElementById(idAba).classList.add("active");
+        document.querySelectorAll(".tab-btn").forEach((btn) => {
+          if (btn.getAttribute("onclick").includes(idAba))
+            btn.classList.add("active");
+        });
+
+
+        if (idAba === "tab-posvenda") {
+          carregarListaPosVenda();
+          
+          //Fecha e limpa os campos de uma nova venda
+          limpezaCamposVisuais();
+        }
+        if (idAba === "tab-performance"){
+          calcularPerformance();
+
+          //Fecha e limpa os campos de uma nova venda
+          limpezaCamposVisuais();
+        } 
+        if (idAba === "tab-controle") {
+          renderizarTabelaProdutos();
+          renderizarTabelaUsuarios();
+
+          //Fecha e limpa os campos de uma nova venda
+          limpezaCamposVisuais();
+        }
+        
+      }
+      function toggleSettings() {
+        const m = document.getElementById("modal-settings");
+        m.style.display = m.style.display === "flex" ? "none" : "flex";
+      }
+
+      // --- VENDAS ---
+      async function buscarCliente() {
+        
+
+        // 1. Pega o valor e remove espaços em branco (trim)
+        const elCpf = document.getElementById("busca-cpf");
+        const cpf = elCpf.value.trim(); 
+
+        // --- BLOCO DE PROTEÇÃO (O SEGREDO ESTÁ AQUI) ---
+        if (!cpf) {
+            showToast("Por favor, digite um CPF para buscar.", "warning");
+            elCpf.focus(); // Coloca o cursor de volta no campo
+            return; // O comando RETURN para a função aqui. Nada abaixo é executado.
+        }
+        
+        // Busca no banco
+        const { data } = await _supabase.from("clientes").select("*").eq("cpf", cpf).single();
+        
+        const divResultado = document.getElementById("resultado-cliente");
+
+        if (data) {
+          clienteAtual = data; // Guarda o cliente na memória global
+
+          // --- NOVO LAYOUT: Mostra Nome, Telefone e Botão Editar ---
+          divResultado.innerHTML = `
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                <div>
+                    <div style="font-size: 1.1rem; font-weight: 700; color: #166534;">${data.nome}</div>
+                    <div style="font-size: 0.9rem; color: #15803d; display: flex; align-items: center; gap: 5px;">
+                        <span class="material-icons-round" style="font-size: 14px;">phone</span> 
+                        ${data.telefone || "Sem telefone"}
+                    </div>
+                </div>
+                <button class="btn btn-secondary" style="padding: 8px 12px;" onclick="abrirModalEdicaoCliente()">
+                    <span class="material-icons-round" style="font-size: 18px;">edit</span>
+                </button>
+            </div>
+          `;
+          
+          document.getElementById("area-carrinho").classList.remove("hidden");
+          document.getElementById("btn-novo-cadastro").classList.add("hidden");
+          showToast("Cliente identificado!", "success");
+        } else {
+          clienteAtual = null;
+          divResultado.innerHTML = `<span style='color:var(--danger); font-weight:bold; display:block; margin-top:10px;'>Cliente não encontrado.</span>`;
+          document.getElementById("area-carrinho").classList.add("hidden");
+          document.getElementById("btn-novo-cadastro").classList.remove("hidden");
+          showToast("Cliente não encontrado.", "warning");
+        }
+      }
+      // Abre o modal preenchendo os dados atuais
+      function abrirModalEdicaoCliente() {
+          if (!clienteAtual) return;
+
+          document.getElementById("edit-cli-nome").value = clienteAtual.nome;
+          document.getElementById("edit-cli-telefone").value = clienteAtual.telefone || "";
+          
+          document.getElementById("modal-editar-cliente").style.display = "flex";
+      }
+
+      // Salva no Supabase e atualiza a tela
+      async function salvarEdicaoCliente() {
+          if (!clienteAtual) return;
+
+          const novoNome = document.getElementById("edit-cli-nome").value;
+          const novoTelefone = document.getElementById("edit-cli-telefone").value;
+
+          if (!novoNome) return showToast("O nome é obrigatório.", "warning");
+
+          showToast("Atualizando dados...", "info");
+
+          // 1. Atualiza no Banco
+          const { error } = await _supabase
+              .from("clientes")
+              .update({ nome: novoNome, telefone: novoTelefone })
+              .eq("id", clienteAtual.id);
+
+          if (error) {
+              console.error(error);
+              return showToast("Erro ao atualizar cliente.", "error");
+          }
+
+          // 2. Atualiza a memória local (clienteAtual)
+          clienteAtual.nome = novoNome;
+          clienteAtual.telefone = novoTelefone;
+
+          // 3. Fecha modal e avisa
+          document.getElementById("modal-editar-cliente").style.display = "none";
+          showToast("Dados atualizados com sucesso!", "success");
+
+          // 4. Força a atualização visual da área do cliente (re-renderiza o bloco verde)
+          // Chamamos buscarCliente novamente ou atualizamos o HTML manualmente. 
+          // Vamos atualizar manualmente para ser mais rápido:
+          const divResultado = document.getElementById("resultado-cliente");
+          divResultado.innerHTML = `
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                <div>
+                    <div style="font-size: 1.1rem; font-weight: 700; color: #166534;">${clienteAtual.nome}</div>
+                    <div style="font-size: 0.9rem; color: #15803d; display: flex; align-items: center; gap: 5px;">
+                        <span class="material-icons-round" style="font-size: 14px;">phone</span> 
+                        ${clienteAtual.telefone || "Sem telefone"}
+                    </div>
+                </div>
+                <button class="btn btn-secondary" style="padding: 8px 12px;" onclick="abrirModalEdicaoCliente()">
+                    <span class="material-icons-round" style="font-size: 18px;">edit</span>
+                </button>
+            </div>
+          `;
+          buscarCliente();
+          filtrarHistoricoGeral();
+      }
+
+      function abrirModalCadastro() {
+        document.getElementById("cad-cpf").value =
+          document.getElementById("busca-cpf").value;
+        document.getElementById("modal-cadastro").style.display = "flex";
+      }
+
+      async function salvarCliente() {
+        const n = document.getElementById("cad-nome").value,
+          c = document.getElementById("cad-cpf").value,
+          t = document.getElementById("cad-telefone").value;
+        if (!n || !c) return showToast("Preencha campos.", "error");
+
+        const { error } = await _supabase
+          .from("clientes")
+          .insert([{ nome: n, cpf: c, telefone: t }]);
+
+        if (!error) {
+          document.getElementById("modal-cadastro").style.display = "none";
+          showToast("Salvo com sucesso!", "success");
+          document.getElementById("busca-cpf").value = c;
+          // Limpa
+          document.getElementById("cad-nome").value = "";
+          document.getElementById("cad-cpf").value = "";
+          document.getElementById("cad-telefone").value = "";
+          buscarCliente();
+        } else {
+          showToast("Erro ao salvar. CPF já existe?", "error");
+        }
+      }
+
+      function atualizarPrecoInput(t) {
+        const s = document.getElementById(
+            t === "padrao" ? "select-produto" : "select-produto-resale"
+          ),
+          i = document.getElementById(
+            t === "padrao" ? "preco-custom-produto" : "preco-custom-resale"
+          ),
+          p = s.options[s.selectedIndex].getAttribute("data-preco");
+        i.value = p ? parseFloat(p).toFixed(2) : "";
+      }
+
+      function adicionarAoCarrinho() {
+        if (!clienteAtual) return showToast("Identifique o cliente.", "error");
+        const id = document.getElementById("select-produto").value,
+          qtd = parseInt(document.getElementById("qtd-produto").value),
+          pr = parseFloat(
+            document.getElementById("preco-custom-produto").value
+          );
+        if (!id || isNaN(pr)) return showToast("Erro no produto.", "error");
+        const p = produtosCache.find((x) => x.id == id);
+        carrinho.push({
+          ...p,
+          preco: pr,
+          qtd,
+          total: pr * qtd,
+          produto_id: p.id,
+        });
+        atualizarCarrinhoVisual();
+        showToast("Item adicionado.", "info");
+      }
+      function removerDoCarrinho(index) {
+        carrinho.splice(index, 1);
+        atualizarCarrinhoVisual();
+      }
+      function atualizarCarrinhoVisual() {
+        const tb = document.getElementById("lista-carrinho");
+        tb.innerHTML = "";
+        let t = 0;
+        carrinho.forEach((i, idx) => {
+          t += i.total;
+          tb.innerHTML += `<tr><td>${i.nome}</td><td>R$${i.preco.toFixed(
+            2
+          )}</td><td>${i.qtd}</td><td>R$${i.total.toFixed(
+            2
+          )}</td><td><span class="material-icons-round" style="color:var(--danger); cursor:pointer;" onclick="removerDoCarrinho(${idx})">delete</span></td></tr>`;
+        });
+        document.getElementById(
+          "valor-total-venda"
+        ).innerText = `R$ ${t.toFixed(2)}`;
+      }
+
+      async function finalizarVendaNormal() {
+        if (!carrinho.length) return showToast("Carrinho vazio!", "warning");
+
+        const dataInput = document.getElementById("venda-data");
+        const dataVenda =
+          dataInput && dataInput.value
+            ? new Date(dataInput.value).toISOString()
+            : new Date().toISOString();
+
+        // 1. Inserir Venda (Cabeçalho)
+        const { data: vendaData, error: vendaError } = await _supabase
+          .from("vendas")
+          .insert([
+            {
+              cliente_id: clienteAtual.id,
+              vendedor_id: usuarioLogado.id,
+              valor_total: carrinho.reduce((a, i) => a + i.total, 0),
+              canal_venda: document.getElementById("venda-tipo").value,
+              tabela_preco: document.getElementById("venda-tabela").value,
+              status_contato: "PENDENTE",
+              data_venda: dataVenda,
+            },
+          ])
+          .select()
+          .single();
+
+        if (vendaError)
+          return showToast("Erro ao salvar: " + vendaError.message, "error");
+
+        // 2. Inserir Itens
+        const itensParaInserir = carrinho.map((item) => ({
+          venda_id: vendaData.id,
+          produto_id: item.produto_id,
+          quantidade: item.qtd,
+          preco_unitario_praticado: item.preco,
+          valor_total_item: item.total,
+        }));
+
+        const { error: itensError } = await _supabase
+          .from("itens_venda")
+          .insert(itensParaInserir);
+
+        if (!itensError) {
+          showToast("Venda Finalizada!", "success");
+
+          // --- LIMPEZA COMPLETA ---
+          carrinho = []; // Zera a memória
+          clienteAtual = null; // Desvincula cliente
+
+          // Limpa campos visuais
+          document.getElementById("busca-cpf").value = "";
+          document.getElementById("area-carrinho").classList.add("hidden"); // Esconde a área de venda
+          document.getElementById("resultado-cliente").innerHTML = "";
+          document.getElementById("qtd-produto").value = 1;
+          document.getElementById("preco-custom-produto").value = "";
+          document.getElementById("select-produto").value = "";
+
+          // CORREÇÃO AQUI: Força a tabela a redesenhar (agora vazia e total R$ 0,00)
+          atualizarCarrinhoVisual();
+          toggleAreaVenda();
+
+          // Reseta a data para hoje
+          if (dataInput)
+            dataInput.value = new Date().toISOString().split("T")[0];
+
+          // Atualiza a lista de histórico lá embaixo
+          filtrarHistoricoGeral();
+        } else {
+          showToast("Venda salva, mas houve erro nos itens.", "warning");
+        }
+      }
+
+      async function filtrarHistoricoGeral(pagina = 1) {
+    console.log("--- INICIANDO FILTRO HISTÓRICO ---");
+
+    const tbody = document.getElementById("tabela-historico");
+    const elInfo = document.getElementById("info-paginacao");
+    
+    // NOVO: Elemento de resumo
+    const elResumo = document.getElementById("resumo-contador-historico");
+
+    // 1. CAPTURA DOS INPUTS
+    const elIni = document.getElementById("filtro-venda-ini");
+    const elFim = document.getElementById("filtro-venda-fim");
+    const elOrigem = document.getElementById("filtro-origem-historico");
+    const elStatus = document.getElementById("filtro-status-historico");
+    const elCpf = document.getElementById("filtro-venda-cpf");
+
+    const ini = elIni ? elIni.value : "";
+    const fim = elFim ? elFim.value : "";
+    const origemFiltro = elOrigem ? elOrigem.value : "TODOS";
+    const statusFiltro = elStatus ? elStatus.value : "TODOS";
+    const cpfFiltro = elCpf ? elCpf.value.trim() : "";
+
+    paginaAtualHist = pagina;
+
+    if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px;">🔄 Carregando dados...</td></tr>';
+    if (elResumo) elResumo.innerHTML = "Calculando...";
+
+    const de = (paginaAtualHist - 1) * itensPorPaginaHist;
+    const ate = de + itensPorPaginaHist - 1;
+
+    // 2. MONTAGEM DA QUERY
+    let selectString = `
+        *, 
+        vendedor:usuarios!vendedor_id(nome),
+        atendente:usuarios!atendente_resp_id(nome)
+    `;
+
+    if (cpfFiltro) {
+        selectString += `, clientes!inner(nome, cpf)`;
+    } else {
+        selectString += `, clientes(nome)`;
+    }
+
+    let query = _supabase
+        .from("vendas")
+        .select(selectString, { count: 'exact' }) // Pede contagem exata
+        .order("data_venda", { ascending: false })
+        .range(de, ate);
+
+    // 3. APLICAÇÃO DOS FILTROS
+    if (ini) query = query.gte("data_venda", ini);
+    if (fim) query = query.lte("data_venda", fim + " 23:59:59");
+
+    if (origemFiltro === "REVENDA") query = query.eq("origem", "REVENDA");
+    else if (origemFiltro === "NORMAL") query = query.neq("origem", "REVENDA");
+
+    if (statusFiltro !== "TODOS") query = query.eq("status_contato", statusFiltro);
+
+    if (cpfFiltro) {
+        query = query.eq("clientes.cpf", cpfFiltro);
+    }
+
+    // 4. EXECUÇÃO
+    const { data, count, error } = await query;
+
+    if (error) {
+        console.error(error);
+        if (tbody) tbody.innerHTML = `<tr><td colspan="7" style="color:red; text-align:center;">Erro: ${error.message}</td></tr>`;
+        return;
+    }
+
+    historicoCache = data || [];
+
+    // 5. ATUALIZA PAGINAÇÃO UI
+    totalPaginasHist = Math.ceil(count / itensPorPaginaHist);
+    if (totalPaginasHist === 0) totalPaginasHist = 1;
+
+    if (elInfo) elInfo.innerText = `Pág ${paginaAtualHist} de ${totalPaginasHist}`;
+    const btnAnt = document.getElementById("btn-ant");
+    const btnProx = document.getElementById("btn-prox");
+    if (btnAnt) btnAnt.disabled = paginaAtualHist === 1;
+    if (btnProx) btnProx.disabled = paginaAtualHist === totalPaginasHist;
+
+    // --- 6. ATUALIZA O TEXTO DE RESUMO (NOVO) ---
+    if (elResumo) {
+        let texto = "";
+        if (count === 0) {
+            texto = "Nenhum registro encontrado.";
+        } else {
+            // Lógica para criar uma frase bonita baseada nos filtros
+            if (statusFiltro !== "TODOS") {
+                // Se filtrou por status (ex: Pendente)
+                if(statusFiltro === "PENDENTE") texto = `🔔 ${count} vendas com atendimento Pendente.`;
+                else if(statusFiltro === "FINALIZADO") texto = `🏁 ${count} vendas/atendimentos Finalizados.`;
+                else texto = `📋 ${count} registros com status ${statusFiltro}.`;
+            } 
+            else if (origemFiltro !== "TODOS") {
+                // Se filtrou só por Origem (ex: Só Revenda)
+                if(origemFiltro === "REVENDA") texto = `🔄 ${count} Revendas encontradas.`;
+                else texto = `🏪 ${count} Vendas normais encontradas.`;
+            } 
+            else {
+                // Filtro Geral
+                texto = `📋 Total de ${count} registros encontrados.`;
+            }
+        }
+        elResumo.innerText = texto;
+    }
+
+    // 7. RENDERIZA
+    if (tbody) {
+        tbody.innerHTML = "";
+        if (historicoCache.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#888;">Nenhuma venda encontrada.</td></tr>';
+        } else {
+            historicoCache.forEach((v) => {
+                let st = v.status_contato || "PENDENTE";
+                
+                // Visual Badges
+                let bd = v.origem === "REVENDA" 
+                    ? '<span class="badge" style="background:#7c3aed; color:white; padding:2px 8px; border-radius:4px; font-size:0.75rem;">Revenda</span>' 
+                    : '<span class="badge" style="background:#64748b; color:white; padding:2px 8px; border-radius:4px; font-size:0.75rem;">Normal</span>';
+                
+                let corStatus = st === "FINALIZADO" ? "green" : (st === "PENDENTE" ? "#ef4444" : "#f59e0b");
+                
+                let valorF = (v.valor_total || 0).toLocaleString("pt-BR", { style: 'currency', currency: 'BRL' });
+                let nomeCli = v.clientes ? v.clientes.nome : "Desconhecido";
+                
+                // Formatação de data
+                let dataF = new Date(v.data_venda).toLocaleDateString("pt-BR");
+
+                // Fundo colorido se finalizado
+                let styleRow = st === "FINALIZADO" ? 'style="background-color: #f0fdf4;"' : "";
+
+                tbody.innerHTML += `<tr ${styleRow}>
+                    <td>#${v.id}</td>
+                    <td>${dataF}</td>
+                    <td>${bd}</td>
+                    <td>${nomeCli}</td>
+                    <td><strong>${valorF}</strong></td>
+                    <td><span style="color:${corStatus}; font-weight:bold; font-size:0.85rem;">${st}</span></td>
+                    <td><button class="btn btn-secondary" style="padding:4px 10px; font-size:0.8rem;" onclick="verDetalhesVenda(${v.id})"><span class="material-icons-round" style="font-size: 14px;">visibility</span> Ver</button></td>
+                </tr>`;
+            });
+        }
+    }
+}
+
+      function mudarPaginaHistorico(direcao) {
+          const novaPagina = paginaAtualHist + direcao;
+          if (novaPagina >= 1 && novaPagina <= totalPaginasHist) {
+              filtrarHistoricoGeral(novaPagina);
+          }
+      }
+
+      async function verDetalhesVenda(id) {
+        // 1. Busca dados da venda atual
+        const { data: venda, error } = await _supabase
+          .from("vendas")
+          .select(
+            `
+                    *,
+                    clientes(*),
+                    vendedor:usuarios!vendedor_id(nome),
+                    atendente:usuarios!atendente_resp_id(nome),
+                    itens_venda(
+                        quantidade, 
+                        preco_unitario_praticado, 
+                        valor_total_item,
+                        produtos(nome)
+                    )
+                `
+          )
+          .eq("id", id)
+          .single();
+
+        if (error) return showToast("Erro ao carregar detalhes.", "error");
+
+        // 2. Define o Estilo Visual (Clareza entre Original vs Revenda)
+        let badgeTipo = "";
+        let infoExtra = "";
+
+        if (venda.origem === "REVENDA") {
+          // É UMA REVENDA (ROXO)
+          badgeTipo = `<span style="background:#7c3aed; color:white; padding:5px 12px; border-radius:20px; font-size:0.8rem; font-weight:bold; display:inline-flex; align-items:center; gap:5px;">
+                                <span class="material-icons-round" style="font-size:16px">sync</span> REVENDA (FIDELIZAÇÃO)
+                             </span>`;
+
+          if (venda.venda_origem_id) {
+            infoExtra = `<div style="margin-top:10px; padding:10px; background:#f3f0ff; border:1px solid #d8b4fe; border-radius:8px; color:#6b21a8; font-size:0.9rem;">
+                                    🔗 Esta venda foi gerada pelo acompanhamento da <strong>Venda Original #${venda.venda_origem_id}</strong>.
+                                 </div>`;
+          }
+        } else {
+          // É UMA VENDA NORMAL (AZUL)
+          badgeTipo = `<span style="background:#0ea5e9; color:white; padding:5px 12px; border-radius:20px; font-size:0.8rem; font-weight:bold; display:inline-flex; align-items:center; gap:5px;">
+                                <span class="material-icons-round" style="font-size:16px">storefront</span> VENDA ORIGINAL
+                             </span>`;
+        }
+
+        // 3. Prepara UI do Modal
+        document.getElementById(
+          "modal-titulo"
+        ).innerHTML = `Venda #${venda.id} &nbsp; ${badgeTipo}`;
+        document.getElementById("atend-cliente").innerText =
+          venda.clientes.nome;
+        document.getElementById("atend-usuario-nome").innerText = venda.vendedor
+          ? venda.vendedor.nome
+          : "-";
+
+        // Esconde controles de edição
+        document.getElementById("area-motivo-perda").classList.add("hidden");
+        document.getElementById("botoes-acao-atendimento").style.display =
+          "none";
+
+        // Status colorido
+        let corStatus =
+          venda.status_contato === "FINALIZADO"
+            ? "green"
+            : venda.status_contato === "ANDAMENTO"
+            ? "#f59e0b"
+            : "gray";
+        let textoStatus =
+          venda.status_contato === "FINALIZADO"
+            ? "CONCLUÍDO"
+            : venda.status_contato;
+        document.getElementById(
+          "atend-status-texto"
+        ).innerHTML = `<span style="color:${corStatus}; font-weight:bold">${textoStatus}</span>`;
+
+        // 4. Monta o HTML do Conteúdo
+        let htmlConteudo = `
+                ${infoExtra} <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:15px; margin-top:15px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:5px;">
+                        <span style="color:var(--text-muted)">Data: <strong>${new Date(
+                          venda.data_venda
+                        ).toLocaleDateString("pt-BR")}</strong></span>
+                        <span style="color:var(--text-muted)">Canal: <strong>${
+                          venda.canal_venda
+                        }</strong></span>
+                    </div>
+                    
+                    <h4 style="margin-bottom:10px; color:var(--text-main);">Itens da Nota</h4>
+                    <table style="width:100%; font-size:0.9rem; border-collapse:collapse;">
+                        <thead style="background:#f8fafc; color:var(--text-muted);">
+                            <tr><th style="padding:8px; text-align:left;">Produto</th><th style="padding:8px; text-align:center;">Qtd</th><th style="padding:8px; text-align:right;">Total</th></tr>
+                        </thead>
+                        <tbody>
+            `;
+
+        if (venda.itens_venda) {
+          venda.itens_venda.forEach((i) => {
+            htmlConteudo += `
+                        <tr style="border-bottom:1px dashed #eee;">
+                            <td style="padding:8px 0;">${
+                              i.produtos.nome
+                            }<br><small style="color:#94a3b8">Un: R$ ${i.preco_unitario_praticado.toFixed(
+              2
+            )}</small></td>
+                            <td style="padding:8px 0; text-align:center;">${
+                              i.quantidade
+                            }</td>
+                            <td style="padding:8px 0; text-align:right;">R$ ${i.valor_total_item.toFixed(
+                              2
+                            )}</td>
+                        </tr>
+                    `;
+          });
+        }
+
+        htmlConteudo += `
+                        </tbody>
+                    </table>
+                    <div style="text-align:right; margin-top:15px; padding-top:10px; border-top:2px solid #eee; font-size:1.2rem; font-weight:bold; color:var(--primary);">
+                        Total: R$ ${venda.valor_total.toFixed(2)}
+                    </div>
+                </div>
+            `;
+
+        // Injeta HTML e Abre
+        const areaConteudo = document.getElementById("area-acao-atendimento");
+        areaConteudo.style.display = "block";
+        areaConteudo.innerHTML = htmlConteudo;
+
+        document.getElementById("modal-atendimento").style.display = "flex";
+      }
+
+      // --- PÓS-VENDA ---
+      // --- PÓS-VENDA (ATUALIZADA COM FUNDO COLORIDO) - É CHAMADA COM O MODAL ---
+      // Função Auxiliar de Paginação
+// --- FUNÇÃO QUE OS BOTÕES DE PAGINAÇÃO CHAMAM ---
+function mudarPaginaPos(direcao) {
+    console.log("Tentando mudar página pós-venda. Direção:", direcao);
+    
+    const novaPagina = paginaAtualPos + direcao;
+    
+    // Verifica se a nova página é válida (não é 0 e não passa do total)
+    if (novaPagina >= 1 && novaPagina <= totalPaginasPos) {
+        carregarListaPosVenda(novaPagina);
+    } else {
+        console.warn("Página inválida ou limite atingido:", novaPagina);
+    }
+}
+// --- FUNÇÃO DE PÓS-VENDA (Com Filtros, Contador e DATA NO MOUSE) ---
+async function carregarListaPosVenda(pagina = 1) {
+    console.log("--- CARREGANDO POS-VENDA ---");
+    
+    const tbody = document.getElementById("tabela-followup");
+    const elInfo = document.getElementById("info-paginacao-pos");
+    const elResumo = document.getElementById("resumo-contador-pos");
+
+    // 1. CAPTURA FILTROS
+    const elIni = document.getElementById("filtro-pos-ini");
+    const elFim = document.getElementById("filtro-pos-fim");
+    const elCpf = document.getElementById("filtro-pos-cpf");
+    const elStatus = document.getElementById("filtro-pos-status");
+
+    const ini = elIni ? elIni.value : "";
+    const fim = elFim ? elFim.value : "";
+    const cpf = elCpf ? elCpf.value.trim() : "";
+    const status = elStatus ? elStatus.value : "TODOS";
+
+    paginaAtualPos = pagina;
+
+    if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">🔄 Buscando dados...</td></tr>';
+    if (elResumo) elResumo.innerHTML = "Calculando...";
+
+    // 2. CALCULA PAGINAÇÃO
+    const de = (paginaAtualPos - 1) * itensPorPaginaPos;
+    const ate = de + itensPorPaginaPos - 1;
+
+    // 3. MONTA QUERY
+    let selectString = cpf 
+        ? `*, clientes!inner(nome, cpf, telefone), atendente:usuarios!atendente_resp_id(nome)`
+        : `*, clientes(nome, cpf, telefone), atendente:usuarios!atendente_resp_id(nome)`;
+
+    let query = _supabase
+        .from("vendas")
+        .select(selectString, { count: 'exact' })
+        .order("data_venda", { ascending: false }) 
+        .range(de, ate);
+
+    // Filtros
+    if (ini) query = query.gte("data_venda", ini);
+    if (fim) query = query.lte("data_venda", fim + " 23:59:59");
+    if (cpf) query = query.eq("clientes.cpf", cpf);
+
+    // Lógica de Status
+    if (status !== "TODOS") {
+        if (status === "COM_VENDA") {
+            query = query.eq("status_contato", "FINALIZADO").eq("resultado_contato", "VENDA");
+        } 
+        else if (status === "SEM_VENDA") {
+            query = query.eq("status_contato", "FINALIZADO").neq("resultado_contato", "VENDA");
+        } 
+        else {
+            query = query.eq("status_contato", status);
+        }
+    }
+
+    // 4. EXECUTA QUERY
+    const { data, count, error } = await query;
+
+    if (error) {
+        console.error(error);
+        if(tbody) tbody.innerHTML = `<tr><td colspan="6" class="text-danger text-center">Erro: ${error.message}</td></tr>`;
+        return;
+    }
+
+    posVendaCache = data || [];
+
+    // 5. ATUALIZA PAGINAÇÃO UI
+    totalPaginasPos = Math.ceil(count / itensPorPaginaPos);
+    if (totalPaginasPos === 0) totalPaginasPos = 1;
+
+    if(elInfo) elInfo.innerText = `Pág ${paginaAtualPos} de ${totalPaginasPos}`;
+    
+    const btnAnt = document.getElementById("btn-pos-ant");
+    const btnProx = document.getElementById("btn-pos-prox");
+    if(btnAnt) btnAnt.disabled = paginaAtualPos === 1;
+    if(btnProx) btnProx.disabled = paginaAtualPos === totalPaginasPos;
+
+    // 7. ATUALIZA O TEXTO DE RESUMO
+    if (elResumo) {
+        let textoResumo = "";
+        if (count === 0) {
+            textoResumo = "Nenhum registro encontrado.";
+        } else {
+            switch (status) {
+                case 'PENDENTE': textoResumo = `🔔 ${count} atendimentos aguardando.`; break;
+                case 'ANDAMENTO': textoResumo = `🟠 ${count} atendimentos em andamento.`; break;
+                case 'COM_VENDA': textoResumo = `💰 ${count} vendas realizadas.`; break;
+                case 'SEM_VENDA': textoResumo = `🔻 ${count} finalizados sem venda.`; break;
+                case 'FINALIZADO': textoResumo = `🏁 ${count} finalizados (Total).`; break;
+                default: textoResumo = `📋 Total de ${count} registros encontrados.`;
+            }
+        }
+        elResumo.innerText = textoResumo;
+    }
+
+    // 6. RENDERIZA TABELA
+    if (tbody) {
+        tbody.innerHTML = "";
+        if (posVendaCache.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#888;">Nenhum registro encontrado.</td></tr>';
+            return;
+        }
+
+        posVendaCache.forEach((v) => {
+            // --- CÁLCULOS DE DATA ---
+            const dataVendaObj = new Date(v.data_venda);
+            const hoje = new Date();
+            const diffTime = Math.abs(hoje - dataVendaObj);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const podeAtender = diffDays >= 25;
+
+            // CALCULA A DATA DO RETORNO (Venda + 25 dias)
+            let dataRetorno = new Date(dataVendaObj);
+            dataRetorno.setDate(dataVendaObj.getDate() + 25);
+            let dataRetornoFormatada = dataRetorno.toLocaleDateString("pt-BR");
+
+            let badge = "";
+            let btn = "";
+            let estiloLinha = "";
+
+            if (v.status_contato === "FINALIZADO") {
+                estiloLinha = 'style="background-color: #f0fdf4;"'; 
+                if (v.resultado_contato === "VENDA") {
+                    badge = `<span class="badge bg-success text-white"><span class="material-icons-round" style="font-size:12px; vertical-align:middle; margin-right:2px;">check_circle</span>Venda Realizada</span>`;
+                } else {
+                    estiloLinha = 'style="background-color: #fff1f2;"'; 
+                    badge = `<span class="badge bg-secondary text-white">Sem Venda / Perda</span>`;
+                }
+                btn = `<button class="btn btn-outline-secondary btn-sm" onclick="abrirModalAtendimento(${v.id})"><span class="material-icons-round" style="font-size: 14px;">visibility</span> Ver</button>`;
+            
+            } else if (v.status_contato === "ANDAMENTO") {
+                estiloLinha = 'style="background-color: #fff7ed;"';
+                badge = `<span class="badge bg-warning text-dark">Em Andamento</span>`;
+                btn = `<button class="btn btn-primary btn-sm" onclick="abrirModalAtendimento(${v.id})"><span class="material-icons-round" style="font-size: 14px;">play_arrow</span> Continuar</button>`;
+            
+            } else {
+                // --- STATUS PENDENTE / AGUARDANDO ---
+                if (podeAtender) {
+                    badge = `<span class="badge bg-danger">Atenção: ${diffDays} dias</span>`;
+                    btn = `<button class="btn btn-primary btn-sm" onclick="abrirModalAtendimento(${v.id})"><span class="material-icons-round" style="font-size: 14px;">call</span> Iniciar</button>`;
+                } else {
+                    const diasFaltam = 25 - diffDays;
+                    // AQUI ESTÁ O BALÃO (TOOLTIP)
+                    badge = `<span class="badge bg-light text-muted border" 
+                                   style="cursor: help;" 
+                                   title="📅 Data ideal para contato: ${dataRetornoFormatada}">
+                                   Aguarde (${diasFaltam}d)
+                             </span>`;
+                    btn = `<button class="btn btn-light btn-sm text-muted" disabled><span class="material-icons-round" style="font-size: 14px;">schedule</span> Aguarde</button>`;
+                }
+            }
+
+            let nomeCli = v.clientes ? v.clientes.nome : "Desconhecido";
+            let dataF = dataVendaObj.toLocaleDateString("pt-BR");
+            let nomeAtendente = v.atendente ? v.atendente.nome : "-";
+
+            tbody.innerHTML += `
+                <tr ${estiloLinha}>
+                    <td>#${v.id}</td>
+                    <td>
+                        <div style="font-weight:600;">${nomeCli}</div>
+                        <small class="text-muted">${v.clientes?.telefone || ''}</small>
+                    </td>
+                    <td>${dataF}</td>
+                    <td>${badge}</td>
+                    <td>${nomeAtendente}</td>
+                    <td style="text-align:right;">${btn}</td>
+                </tr>
+            `;
+        });
+    }
+}
+      
+async function abrirModalAtendimento(id) {
+
+        //Limpa itens da Revenda
+        const ul = document.getElementById("resumo-carrinho-resale");
+        ul.innerHTML = "";
+
+        const select = document.getElementById("id-resumo-carrinho-resale");
+        select.style.display = "none";
+
+        // 1. Busca dados da venda original (Pai) com todas as conexões
+        const { data: venda, error } = await _supabase
+          .from("vendas")
+          .select(
+            `
+                *,
+                clientes(*),
+                vendedor:usuarios!vendedor_id(nome),
+                atendente:usuarios!atendente_resp_id(nome),
+                itens_venda(*, produtos(nome, preco_padrao))
+            `
+          )
+          .eq("id", id)
+          .single();
+
+        if (error || !venda) {
+          console.error(error);
+          return showToast("Erro ao carregar.", "error");
+        }
+
+        // Salva o status original antes de qualquer modificação automática
+        statusOriginalAtendimento = venda.status_contato;
+        vendaEmAtendimento = venda; // Salva na global
+
+        // 2. Se estiver PENDENTE, muda status para ANDAMENTO (e assume autoria)
+        if (venda.status_contato === "PENDENTE") {
+          await _supabase
+            .from("vendas")
+            .update({
+              status_contato: "ANDAMENTO",
+              atendente_resp_id: usuarioLogado.id,
+            })
+            .eq("id", id);
+          venda.status_contato = "ANDAMENTO";
+          venda.atendente = { nome: usuarioLogado.nome };
+        }
+
+        // Define UI
+        document.getElementById("atend-cliente").innerText =
+          venda.clientes.nome;
+        let nomeResponsavel = venda.atendente
+          ? venda.atendente.nome
+          : usuarioLogado.nome;
+        document.getElementById("atend-usuario-nome").innerText =
+          nomeResponsavel;
+        document.getElementById("area-motivo-perda").classList.add("hidden");
+
+        const isFin = venda.status_contato === "FINALIZADO";
+
+        if (isFin) {
+          // --- MODO VISUALIZAÇÃO (Igual ao anterior) ---
+          document.getElementById(
+            "modal-titulo"
+          ).innerHTML = `Atendimento #${venda.id}`;
+          document.getElementById("area-acao-atendimento").style.display =
+            "none";
+          document.getElementById("botoes-acao-atendimento").style.display =
+            "none";
+
+          let badgeStatus = "";
+          let htmlItens = "";
+          let totalVisual = 0;
+          let infoExtra = "";
+
+          if (venda.resultado_contato === "VENDA") {
+            badgeStatus = `<span style="background:#dcfce7; color:#166534; padding:5px 12px; border-radius:20px; font-size:0.8rem; font-weight:bold; display:inline-flex; align-items:center; gap:5px;">
+                                    <span class="material-icons-round" style="font-size:16px">check_circle</span> REVENDA EFETUADA
+                                   </span>`;
+            const { data: revendaFilha } = await _supabase
+              .from("vendas")
+              .select("*, itens_venda(*, produtos(nome))")
+              .eq("venda_origem_id", id)
+              .maybeSingle();
+
+            if (revendaFilha) {
+              totalVisual = revendaFilha.valor_total;
+              infoExtra = `<div style="margin-top:10px; padding:10px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; color:#15803d; font-size:0.9rem;">
+                                    🎉 <strong>Sucesso!</strong> Este atendimento gerou a nova Venda <strong>#${revendaFilha.id}</strong>.
+                                 </div>`;
+              if (revendaFilha.itens_venda) {
+                revendaFilha.itens_venda.forEach((i) => {
+                  htmlItens += `
+                                    <tr style="border-bottom:1px dashed #eee;">
+                                        <td style="padding:8px 0;">${
+                                          i.produtos.nome
+                                        }<br><small style="color:#94a3b8">Un: R$ ${i.preco_unitario_praticado.toFixed(
+                    2
+                  )}</small></td>
+                                        <td style="padding:8px 0; text-align:center;">${
+                                          i.quantidade
+                                        }</td>
+                                        <td style="padding:8px 0; text-align:right;">R$ ${i.valor_total_item.toFixed(
+                                          2
+                                        )}</td>
+                                    </tr>`;
+                });
+              }
+            } else {
+              htmlItens = `<tr><td colspan="3" style="padding:10px; text-align:center; color:#888;">Erro: Venda gerada não encontrada.</td></tr>`;
+            }
+          } else {
+            badgeStatus = `<span style="background:#fee2e2; color:#991b1b; padding:5px 12px; border-radius:20px; font-size:0.8rem; font-weight:bold; display:inline-flex; align-items:center; gap:5px;">
+                                    <span class="material-icons-round" style="font-size:16px">cancel</span> NÃO REALIZADA
+                                   </span>`;
+            infoExtra = `<div style="margin-top:10px; padding:10px; background:#fff5f5; border:1px solid #fecaca; border-radius:8px; color:#991b1b; font-size:0.9rem;">
+                                    <strong>Motivo da Perda:</strong> ${
+                                      venda.motivo_perda || "Não informado"
+                                    }
+                                 </div>`;
+            htmlItens = `<tr><td colspan="3" style="padding:20px; text-align:center; color:#94a3b8;">Nenhum item vendido neste atendimento.</td></tr>`;
+          }
+
+          document.getElementById("atend-status-texto").innerHTML = badgeStatus;
+
+          let htmlConteudo = `
+                    ${infoExtra}
+                    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:15px; margin-top:15px;">
+                        <h4 style="margin-bottom:10px; color:var(--text-main);">Resumo da Operação</h4>
+                        <table style="width:100%; font-size:0.9rem; border-collapse:collapse;">
+                            <thead style="background:#f8fafc; color:var(--text-muted);">
+                                <tr><th style="padding:8px; text-align:left;">Produto</th><th style="padding:8px; text-align:center;">Qtd</th><th style="padding:8px; text-align:right;">Total</th></tr>
+                            </thead>
+                            <tbody>${htmlItens}</tbody>
+                        </table>
+                        <div style="text-align:right; margin-top:15px; padding-top:10px; border-top:2px solid #eee; font-size:1.2rem; font-weight:bold; color:var(--primary);">
+                            Total Gerado: R$ ${totalVisual.toFixed(2)}
+                        </div>
+                    </div>
+                `;
+          const areaAcao = document.getElementById("area-acao-atendimento");
+          areaAcao.style.display = "block";
+          areaAcao.innerHTML = htmlConteudo;
+        } else {
+          // ============================================================
+          // MODO EDIÇÃO (EM ANDAMENTO) - COM WHATSAPP
+          // ============================================================
+          document.getElementById("modal-titulo").innerText =
+            "Realizar Contato";
+          document.getElementById("area-acao-atendimento").style.display =
+            "block";
+          document.getElementById("botoes-acao-atendimento").style.display =
+            "grid";
+          document.getElementById("atend-status-texto").innerText =
+            "EM ANDAMENTO";
+
+          // --- AQUI ESTÁ A NOVIDADE: SELETOR DE CONTATO ---
+          document.getElementById("area-acao-atendimento").innerHTML = `
+                    <div style="background: #e0f2fe; padding:15px; border-radius:8px; margin-bottom:15px; border:1px solid #bae6fd;">
+                        <div class="form-group" style="margin-bottom:10px;">
+                            <label style="color:#0369a1; font-weight:bold;">Meio de Contato</label>
+                            <select id="meio-contato" onchange="toggleBotaoWhats()" style="border-color:#0ea5e9;">
+                                <option value="TELEFONE">Telefone (Ligação)</option>
+                                <option value="WHATSAPP">WhatsApp</option>
+                            </select>
+                        </div>
+                        <button id="btn-enviar-whats" class="btn hidden" style="width:100%; background:#25D366; color:white; justify-content:center;" onclick="enviarMensagemWhatsApp()">
+                            <span class="material-icons-round">chat</span> Enviar Mensagem no WhatsApp
+                        </button>
+                    </div>
+
+                    <div class="row-config" style="background: #f8fafc; padding:10px; border-radius:8px;">
+                         <div class="form-group"><label>Canal Revenda</label><select id="resale-tipo"><option>Loja Física</option><option>Online/App</option></select></div>
+                         <div class="form-group"><label>Tabela Revenda</label><select id="resale-tabela"><option>Preço Loja</option><option>PBM</option></select></div>
+                    </div>
+                    
+                    <h4 style="margin-bottom:10px; color:var(--primary); margin-top:10px;">1. Revender Itens Anteriores?</h4>
+                    <div id="lista-itens-originais" style="margin-bottom: 20px;"></div>
+                    
+                    <h4 style="margin-bottom:10px; color:var(--primary);">2. Adicionar Novo Produto</h4>
+                    <div class="filter-bar" style="background:#fff; border:1px solid #ddd; padding:10px; display:block;">
+                        <div class="form-group" style="margin-bottom:10px;"><label>Produto</label><select id="select-produto-resale" onchange="atualizarPrecoInput('resale')"></select></div>
+                        <div style="display:flex; gap:10px;">
+                            <div class="form-group" style="flex:1;"><label>Preço Unit.</label><input type="number" id="preco-custom-resale" step="0.01"></div>
+                            <div class="form-group" style="flex:1;"><label>Qtd</label><input type="number" id="qtd-produto-resale" value="1"></div>
+                        </div>
+                        <button class="btn btn-secondary" style="width:100%; margin-top:5px;" onclick="adicionarAoCarrinhoResale()"><span class="material-icons-round">add</span> Adicionar Item</button>
+                    </div>
+                `;
+
+          preencherSelectProdutos("select-produto-resale");
+          carrinhoResale = [];
+          const listaContainer = document.getElementById(
+            "lista-itens-originais"
+          );
+          listaContainer.innerHTML = "";
+
+          cacheItensModal = venda.itens_venda || [];
+
+          if (cacheItensModal.length > 0) {
+            cacheItensModal.forEach((item, index) => {
+              listaContainer.innerHTML += `
+                            <label class="checkbox-wrapper">
+                                <input type="checkbox" onchange="toggleItemRecompra(${index}, this.checked)">
+                                <div><strong>${item.produtos.nome}</strong><br><small>Qtd Original: ${item.quantidade} | R$${item.preco_unitario_praticado}</small></div>
+                            </label>`;
+            });
+          }
+          //Libera a visualização da lista de produtos
+          select.style.display = "block";
+          atualizarResumoResale();
+        }
+
+        document.getElementById("modal-atendimento").style.display = "flex";
+      }
+
+      // --- FUNÇÃO ATUALIZADA: FECHAR MODAL ---
+      async function fecharModalAtendimento() {
+    // 1. Esconde o modal visualmente
+    document.getElementById("modal-atendimento").style.display = "none";
+
+    // 2. VERIFICAÇÃO INTELIGENTE
+    if (vendaEmAtendimento) {
+        const statusFinal = vendaEmAtendimento.status_contato;
+
+        // Se o status mudou desde que abriu OU se foi finalizado agora
+        if (statusOriginalAtendimento !== statusFinal || statusFinal === "FINALIZADO") {
+            
+            // console.log("Houve alteração de status. Recarregando tabelas...");
+            await filtrarHistoricoGeral(paginaAtualHist); // Mantém na página atual
+            carregarListaPosVenda(paginaAtualPos);       // Mantém na página atual
+        
+        }
+    }
+
+    // 3. Limpa a variável de controle
+    vendaEmAtendimento = null;
+}
+
+      function toggleItemRecompra(index, checked) {
+        // Busca o objeto correto usando o índice
+        const i = cacheItensModal[index];
+
+        if (checked) {
+          carrinhoResale.push({
+            produto_id: i.produto_id,
+            nome: i.produtos.nome,
+            preco: i.preco_unitario_praticado,
+            qtd: i.quantidade,
+            total: i.valor_total_item,
+          });
+        } else {
+          carrinhoResale = carrinhoResale.filter(
+            (x) => x.produto_id !== i.produto_id
+          );
+        }
+        atualizarResumoResale();
+      }
+
+      function adicionarAoCarrinhoResale() {
+        const id = document.getElementById("select-produto-resale").value,
+          qtd = parseInt(document.getElementById("qtd-produto-resale").value),
+          pr = parseFloat(document.getElementById("preco-custom-resale").value);
+        if (!id) return;
+        const p = produtosCache.find((x) => x.id == id);
+        carrinhoResale.push({
+          produto_id: p.id,
+          nome: p.nome,
+          preco: pr,
+          qtd,
+          total: pr * qtd,
+        });
+        atualizarResumoResale();
+      }
+
+      function removerDoCarrinhoResale(index) {
+        carrinhoResale.splice(index, 1);
+        atualizarResumoResale();
+      }
+
+      function atualizarResumoResale() {
+        const ul = document.getElementById("resumo-carrinho-resale");
+        ul.innerHTML = "";
+        let t = 0;
+        const isFin = vendaEmAtendimento.status_contato === "FINALIZADO";
+
+        if (!carrinhoResale.length) ul.innerHTML = "<li>Nenhum item.</li>";
+        else
+          carrinhoResale.forEach((i, idx) => {
+            t += i.total;
+            let btnRemove = isFin
+              ? ""
+              : `<span class="material-icons-round" style="color:var(--danger); cursor:pointer;" onclick="removerDoCarrinhoResale(${idx})">cancel</span>`;
+            ul.innerHTML += `<li>${i.qtd}x ${i.nome} - R$${i.total.toFixed(
+              2
+            )} ${btnRemove}</li>`;
+          });
+        document.getElementById("total-resale").innerText = `R$ ${t.toFixed(
+          2
+        )}`;
+      }
+
+      function iniciarFluxoPerda() {
+        document.getElementById("area-acao-atendimento").style.display = "none";
+        document.getElementById("botoes-acao-atendimento").style.display =
+          "none";
+        document.getElementById("area-motivo-perda").classList.remove("hidden");
+      }
+      function cancelarFluxoPerda() {
+        document.getElementById("area-motivo-perda").classList.add("hidden");
+        document.getElementById("area-acao-atendimento").style.display =
+          "block";
+        document.getElementById("botoes-acao-atendimento").style.display =
+          "grid";
+      }
+      function confirmarPerda() {
+        const m = document.getElementById("select-motivo-perda").value;
+        //SINALIZO QUE O STATUS FOI ALTERADO VIA CONTATO, ISSO EVITA QUE A VISUALIZAÇÃO DOS DEMAIS FINALIZADOS RECARREGUE A PAGINA
+        statusOriginalAtendimento = "FINALIZADO-VIA-CONTATO";
+        if (!m) return showToast("Motivo?", "warning");
+        finalizarAtendimento("SEM_VENDA", m);
+      }
+
+      async function finalizarAtendimento(res, mot = null) {
+        if (!vendaEmAtendimento) return;
+
+        // --- 1. CAPTURA O MEIO DE CONTATO SELECIONADO ---
+        const elMeio = document.getElementById("meio-contato");
+        // Se por algum motivo o campo não estiver na tela, define um padrão ou deixa null
+        const meioSelecionado = elMeio ? elMeio.value : "TELEFONE";
+
+        // CORREÇÃO DO ERRO 400: Traduzindo 'COM_VENDA' para 'VENDA'
+        const statusBanco = res === "COM_VENDA" ? "VENDA" : "SEM_VENDA";
+
+        //SINALIZO QUE O STATUS FOI ALTERADO VIA CONTATO, ISSO EVITA QUE A VISUALIZAÇÃO DOS DEMAIS FINALIZADOS RECARREGUE A PAGINA
+        statusOriginalAtendimento = "FINALIZADO-VIA-CONTATO";
+
+        // --- 2. PREPARA OS DADOS PARA ATUALIZAR A VENDA ORIGINAL ---
+        const updateData = {
+          status_contato: "FINALIZADO",
+          atendente_resp_id: usuarioLogado.id,
+          resultado_contato: statusBanco,
+          motivo_perda: mot,
+          data_contato: new Date().toISOString(),
+          meio_contato: meioSelecionado, // <--- CAMPO NOVO ADICIONADO AQUI
+        };
+
+        const { error: errUp } = await _supabase
+          .from("vendas")
+          .update(updateData)
+          .eq("id", vendaEmAtendimento.id);
+
+        if (errUp) {
+          console.error(errUp);
+          return showToast(
+            "Erro ao atualizar venda: " + errUp.message,
+            "error"
+          );
+        }
+
+        // --- 3. SE GEROU VENDA, CRIA A NOVA VENDA (REVENDA) ---
+        if (res === "COM_VENDA") {
+          if (!carrinhoResale.length)
+            return showToast("Selecione itens para a revenda.", "warning");
+
+          const { data: revendaData, error: errIns } = await _supabase
+            .from("vendas")
+            .insert([
+              {
+                cliente_id: vendaEmAtendimento.cliente_id,
+                vendedor_id: usuarioLogado.id,
+                valor_total: carrinhoResale.reduce((a, i) => a + i.total, 0),
+                canal_venda: document.getElementById("resale-tipo").value,
+                tabela_preco: document.getElementById("resale-tabela").value,
+                origem: "REVENDA",
+                venda_origem_id: vendaEmAtendimento.id,
+                status_contato: "PENDENTE",
+                // A nova venda nasce sem contato feito ainda, então não salvamos meio_contato nela
+              },
+            ])
+            .select()
+            .single();
+
+          if (errIns) {
+            console.error(errIns);
+            return showToast("Erro ao criar a revenda.", "error");
+          }
+
+          // Insere os itens da nova venda
+          const itensRevenda = carrinhoResale.map((i) => ({
+            venda_id: revendaData.id,
+            produto_id: i.produto_id,
+            quantidade: i.qtd,
+            preco_unitario_praticado: i.preco,
+            valor_total_item: i.total,
+          }));
+          await _supabase.from("itens_venda").insert(itensRevenda);
+
+          showToast("Revenda gerada com sucesso!", "success");
+        } else {
+          showToast("Perda registrada.", "info");
+        }
+
+        await filtrarHistoricoGeral();
+        fecharModalAtendimento();
+      }
+
+      // --- PERFORMANCE (Cálculos baseados no cache carregado) ---
+      // --- PERFORMANCE (CORRIGIDO: AGORA FILTRA POR DATA) ---
+      // --- PERFORMANCE (CORRIGIDA: CÁLCULO FINANCEIRO EXATO) ---
+async function calcularPerformance() {
+    const ini = document.getElementById("kpi-ini").value;
+    const fim = document.getElementById("kpi-fim").value;
+
+    showToast("Calculando métricas...", "info");
+
+    // ==============================================================================
+    // PASSO 1: BUSCA OS ATENDIMENTOS (Para contar Contatos, Perdas e Taxa de Conversão)
+    // ==============================================================================
+    let queryAtend = _supabase
+        .from("vendas")
+        .select(`
+            id, resultado_contato, motivo_perda, status_contato, meio_contato,
+            atendente:usuarios!atendente_resp_id(id, nome)
+        `)
+        .eq("status_contato", "FINALIZADO");
+
+    // Filtra pela data que o contato foi feito
+    if (ini) queryAtend = queryAtend.gte("data_contato", ini + " 00:00:00");
+    if (fim) queryAtend = queryAtend.lte("data_contato", fim + " 23:59:59");
+
+    const { data: atendimentos, error: errAtend } = await queryAtend;
+    
+    if (errAtend) { console.error(errAtend); return showToast("Erro nos atendimentos.", "error"); }
+
+
+    // ==============================================================================
+    // PASSO 2: BUSCA O DINHEIRO REAL (As vendas que nasceram como 'REVENDA')
+    // ==============================================================================
+    let queryFat = _supabase
+        .from("vendas")
+        .select(`
+            id, valor_total, vendedor_id,
+            vendedor:usuarios!vendedor_id(id, nome)
+        `)
+        .eq("origem", "REVENDA"); // Pega só o que é dinheiro novo de revenda
+
+    // Filtra pela data da venda (o dia que entrou o dinheiro)
+    if (ini) queryFat = queryFat.gte("data_venda", ini);
+    if (fim) queryFat = queryFat.lte("data_venda", fim + " 23:59:59");
+
+    const { data: revendasReais, error: errFat } = await queryFat;
+
+    if (errFat) { console.error(errFat); return showToast("Erro no faturamento.", "error"); }
+
+
+    // ==============================================================================
+    // PASSO 3: PROCESSAMENTO UNIFICADO (JUNTAR AS DUAS BUSCAS)
+    // ==============================================================================
+    
+    let totalContatos = atendimentos.length;
+    let totalPerdas = 0;
+    let meioTelefone = 0;
+    let meioWhatsApp = 0;
+    let mapaMotivos = {};
+    
+    // Mapa para o Ranking (Chave = ID do usuário)
+    let mapaRanking = {}; 
+
+    // --- A. Processa os Atendimentos (Esforço) ---
+    atendimentos.forEach(a => {
+        let idUser = a.atendente ? a.atendente.id : "0";
+        let nomeUser = a.atendente ? a.atendente.nome : "Desconhecido";
+
+        // Inicializa no ranking
+        if (!mapaRanking[idUser]) mapaRanking[idUser] = { nome: nomeUser, contatos: 0, vendas: 0, valor: 0 };
+
+        mapaRanking[idUser].contatos++;
+
+        // --- CORREÇÃO AQUI ---
+        // Só conta para o gráfico de canais se for VENDA
+        if (a.resultado_contato === "VENDA") {
+            if (a.meio_contato === "WHATSAPP") meioWhatsApp++;
+            else if (a.meio_contato === "TELEFONE") meioTelefone++;
+        }
+        // ---------------------
+
+        // Perdas
+        if (a.resultado_contato !== "VENDA") {
+            totalPerdas++;
+            let motivo = a.motivo_perda || "Não informado";
+            mapaMotivos[motivo] = (mapaMotivos[motivo] || 0) + 1;
+        }
+    });
+
+    // --- B. Processa as Revendas (Dinheiro) ---
+    let faturamentoRevenda = 0;
+    let totalVendasRealizadas = revendasReais.length;
+
+    revendasReais.forEach(r => {
+        let idUser = r.vendedor_id || "0";
+        let nomeUser = r.vendedor ? r.vendedor.nome : "Desconhecido";
+        let valor = r.valor_total || 0;
+
+        faturamentoRevenda += valor;
+
+        // Atualiza o Ranking Financeiro
+        if (!mapaRanking[idUser]) mapaRanking[idUser] = { nome: nomeUser, contatos: 0, vendas: 0, valor: 0 };
+        
+        mapaRanking[idUser].vendas++; // Incrementa venda aqui para garantir que bate com o dinheiro
+        mapaRanking[idUser].valor += valor;
+    });
+
+
+    // ==============================================================================
+    // PASSO 4: ATUALIZAR TELA
+    // ==============================================================================
+
+    // KPIs TOPO
+    document.getElementById("kpi-total").innerText = totalContatos;
+    document.getElementById("kpi-perdas").innerText = totalPerdas;
+    document.getElementById("kpi-revendas").innerText = totalVendasRealizadas;
+    document.getElementById("kpi-faturamento").innerText = `R$ ${faturamentoRevenda.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
+
+    // Taxa de Conversão (Baseada no esforço vs resultado)
+    let conversao = totalContatos > 0 ? ((totalVendasRealizadas / totalContatos) * 100).toFixed(1) : 0;
+    
+    // Se a conversão passar de 100% (ex: vendeu mais do que atendeu no periodo por data diferente), limita visualmente
+    if (conversao > 100) conversao = 100; 
+    document.getElementById("kpi-conversao").innerText = conversao + "%";
+
+    // GRÁFICOS
+    desenharGraficoPerdas(mapaMotivos, totalPerdas);
+    desenharGraficoCanais(totalVendasRealizadas, meioTelefone, meioWhatsApp);
+
+    // TABELA DE RANKING
+    const tbodyRanking = document.getElementById("ranking-atendentes");
+    tbodyRanking.innerHTML = "";
+
+    // Converte o mapa em array e ordena por VALOR ($$$)
+    const listaRanking = Object.values(mapaRanking).sort((a, b) => b.valor - a.valor);
+
+    if (listaRanking.length > 0) {
+        listaRanking.forEach((dados, index) => {
+            let conv = dados.contatos > 0 ? ((dados.vendas / dados.contatos) * 100).toFixed(0) : 0;
+            if (conv > 100) conv = 100;
+
+            let valorFmt = dados.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            let ticket = dados.vendas > 0 ? (dados.valor / dados.vendas) : 0;
+            let ticketFmt = ticket.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            
+            // Badge para o Top 1
+            let medalha = "";
+            if (index === 0) medalha = "🥇 ";
+            else if (index === 1) medalha = "🥈 ";
+            else if (index === 2) medalha = "🥉 ";
+
+            tbodyRanking.innerHTML += `
+                <tr>
+                    <td>${medalha}${index + 1}º</td>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <div style="width:32px; height:32px; background:#e0f2fe; color:#0369a1; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:0.9rem;">
+                                ${dados.nome.charAt(0).toUpperCase()}
+                            </div>
+                            <span style="font-weight:600;">${dados.nome}</span>
+                        </div>
+                    </td>
+                    <td style="text-align:center;">${dados.contatos}</td>
+                    <td style="text-align:center; color:var(--success); font-weight:bold;">${dados.vendas}</td>
+                    <td style="text-align:center;">${conv}%</td>
+                    <td style="text-align:right;">${valorFmt}</td>
+                    <td style="text-align:right;">${ticketFmt}</td>
+                </tr>`;
+        });
+    } else {
+        tbodyRanking.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:#94a3b8;">Sem dados neste período.</td></tr>';
+    }
+
+    showToast("Performance atualizada!", "success");
+}
+      
+      async function atualizarValorRevenda(idAtendente, idElemento, idElementolTickt,quantVendas) {
+    // 1. Chama sua função de cálculo (que demora um pouco)
+    const valorCalculado = await obterTotalVendasPorAtendente(idAtendente);
+
+    // 2. Busca o elemento na tela pelo ID que criamos
+    const elemento = document.getElementById(idElemento);
+    const elementoTickt = document.getElementById(idElementolTickt);
+
+    // 3. Se o elemento existir, substitui o "Calculando..." pelo valor real
+    if (elemento) {
+        // Formata para dinheiro: R$ 1.500,00
+        const textoFormatado = valorCalculado.toLocaleString('pt-BR', { 
+            style: 'currency', 
+            currency: 'BRL' 
+        });
+
+        const textoFormatadoTickt = (valorCalculado/quantVendas).toLocaleString('pt-BR', { 
+            style: 'currency', 
+            currency: 'BRL' 
+        });
+
+        elemento.innerText = textoFormatado;
+        elemento.style.color = "#0f172a"; // Muda cor para preto (sucesso)
+         elementoTickt.innerText = textoFormatadoTickt;
+        elementoTickt.style.color = "#0f172a"; // Muda cor para preto (sucesso)
+        }
+
+        
+    }
+
+    
+
+      /**
+       * Retorna o valor total (R$) vendido por um atendente específico.
+       * Filtra por: ID do Atendente, Origem (Revenda), Sucesso (Venda) e Data.
+       */
+      
+       async function obterTotalVendasPorAtendente(idAtendente) {
+        // 1. Definição de Datas (Para não travar o sistema buscando desde 1900)
+        const elIni = document.getElementById("kpi-ini");
+        const elFim = document.getElementById("kpi-fim");
+
+        const hoje = new Date().toISOString().split('T')[0];
+        const ini = elIni && elIni.value ? elIni.value : '2023-01-01';
+        const fim = elFim && elFim.value ? elFim.value : hoje;
+
+        console.log(`--- Iniciando busca para Atendente ID: ${idAtendente} ---`);
+
+        // ---------------------------------------------------------------
+        // PASSO 1: Busca as vendas (Trazemos origem e vendedor_id)
+        // ---------------------------------------------------------------
+        const { data: todasAsVendas, error: erroVendas } = await _supabase
+          .from("vendas")
+          .select(`
+              id, 
+              origem,
+              vendedor_id
+          `)
+
+        if (erroVendas) {
+          console.error("Erro ao buscar vendas:", erroVendas);
+          return 0;
+        }
+
+        if (!todasAsVendas || todasAsVendas.length === 0) return 0;
+
+        // ---------------------------------------------------------------
+        // PASSO 2: Filtra no Código (Revenda + ID do Atendente)
+        // ---------------------------------------------------------------
+        const vendasFiltradas = todasAsVendas.filter(venda => {
+            // A. Verifica se é Revenda (Texto)
+            const origemTexto = (venda.origem || "").toUpperCase();
+            const ehRevenda = origemTexto.includes("REVENDA") || origemTexto.includes("POS") || origemTexto.includes("FIDEL");
+            
+            // B. Verifica se foi esse atendente que vendeu (ID)
+            // Comparação "fraca" (==) resolve problemas de texto vs número
+            const ehDoAtendente = venda.vendedor_id == idAtendente;
+
+            // Retorna só se atender às DUAS condições
+            return ehRevenda && ehDoAtendente;
+        });
+
+        console.log(`Vendas Totais: ${todasAsVendas.length} | Revendas do Usuário: ${vendasFiltradas.length}`);
+
+        if (vendasFiltradas.length === 0) return 0;
+
+        // ---------------------------------------------------------------
+        // PASSO 3: Busca e Soma os Itens (Baseado nos IDs filtrados)
+        // ---------------------------------------------------------------
+        const idsParaSomar = vendasFiltradas.map(v => v.id);
+
+        const { data: itens, error: erroItens } = await _supabase
+          .from('itens_venda')
+          .select('valor_total_item')
+          .in('venda_id', idsParaSomar);
+
+        if (erroItens) {
+            console.error("Erro ao buscar itens:", erroItens);
+            return 0;
+        }
+
+        // Soma Final      
+        const totalCalculado = itens.reduce((acc, item) => {
+          return acc + (parseFloat(item.valor_total_item) || 0);
+        }, 0);
+
+        return totalCalculado; // RETORNE APENAS O NÚMERO!
+      }
+      
+      // --- FUNÇÕES DE DESENHO (Incluídas para garantir que apareça) ---
+      function desenharGraficoPerdas(mapa, total) {
+        const div = document.getElementById("chart-motivos");
+        div.innerHTML = "";
+
+        if (total === 0) {
+          div.innerHTML =
+            '<p style="text-align:center; color:#94a3b8; padding:20px;">Sem perdas no período.</p>';
+          return;
+        }
+
+        Object.entries(mapa)
+          .sort((a, b) => b[1] - a[1])
+          .forEach(([motivo, qtd]) => {
+            let porcentagem = ((qtd / total) * 100).toFixed(1);
+            div.innerHTML += `
+                    <div style="margin-bottom:8px;">
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:2px;">
+                            <span>${motivo}</span>
+                            <span style="color:#64748b;">${qtd} (${porcentagem}%)</span>
+                        </div>
+                        <div style="background:#f1f5f9; height:8px; border-radius:4px; width:100%;">
+                            <div style="width:${porcentagem}%; background:#ef4444; height:100%; border-radius:4px;"></div>
+                        </div>
+                    </div>`;
+          });
+      }
+      // --- MANTENHA AS FUNÇÕES AUXILIARES DE DESENHO ABAIXO ---
+      // (Se você já tem elas no código, não precisa copiar de novo,
+      // mas garanta que 'atualizarTabelaRankingBonita' e 'atualizarGraficoPerdas' existam)
+
+      // --- FUNÇÕES AUXILIARES DE VISUALIZAÇÃO ---
+
+      function gerarGraficoPerdas(mapa, total) {
+        const div = document.getElementById("chart-motivos");
+        div.innerHTML = "";
+
+        if (total === 0) {
+          div.innerHTML =
+            '<p style="text-align:center; color:#94a3b8; padding:20px;">Sem perdas no período.</p>';
+          return;
+        }
+
+        Object.entries(mapa)
+          .sort((a, b) => b[1] - a[1])
+          .forEach(([motivo, qtd]) => {
+            let porcentagem = ((qtd / total) * 100).toFixed(1);
+            div.innerHTML += `
+                    <div style="margin-bottom:8px;">
+                        <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:2px;">
+                            <span>${motivo}</span>
+                            <span style="color:#64748b;">${qtd} (${porcentagem}%)</span>
+                        </div>
+                        <div style="background:#f1f5f9; height:8px; border-radius:4px; width:100%;">
+                            <div style="width:${porcentagem}%; background:#ef4444; height:100%; border-radius:4px;"></div>
+                        </div>
+                    </div>`;
+          });
+      }
+
+      function desenharGraficoCanais(tV,mT, mW) {
+        const div = document.getElementById("chart-canais");
+        div.innerHTML = "";
+
+          // Calcula porcentagem de conversão
+          let taxaConversaoW = (mW/tV)*100;
+          let taxaConversaoT = (mT/tV)*100;;
+
+          // Define ícone e cor baseados no canal
+          let iconeW = "chat";
+          let corW = "#25D366"; // Verde do Whats
+          let nomeAmigavelW = "WhatsApp";
+          
+          let iconeT = "phone";
+          let corT = "#3b82f6"; // Azul do Telefone
+          let nomeAmigavelT = "Telefone";
+          
+
+          div.innerHTML += `
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px; background:#fff; padding:5px; border-radius:6px;">
+                    <div style="background:${corT}20; color:${corT}; width:40px; height:40px; border-radius:8px; display:flex; align-items:center; justify-content:center;">
+                        <span class="material-icons-round">${iconeT}</span>
+                    </div>
+                    <div style="flex:1;">
+                        <div style="background:#f1f5f9; height:8px; border-radius:4px; width:100%;">
+                            <div style="width:${taxaConversaoT}%; background:${corT}; height:100%; border-radius:4px;"></div>
+                        </div>
+                        <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">
+                            ${tV} Revenda(s) - ${mT} Via Telenofe
+                        </div>
+                    </div>
+                </div><div style="display:flex; align-items:center; gap:10px; margin-bottom:12px; background:#fff; padding:5px; border-radius:6px;">
+                    <div style="background:${corW}20; color:${corW}; width:40px; height:40px; border-radius:8px; display:flex; align-items:center; justify-content:center;">
+                        <span class="material-icons-round">${iconeW}</span>
+                    </div>
+                    <div style="flex:1;">
+                
+                        <div style="background:#f1f5f9; height:8px; border-radius:4px; width:100%;">
+                            <div style="width:${taxaConversaoW}%; background:${corW}; height:100%; border-radius:4px;"></div>
+                        </div>
+                        <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">
+                            ${tV} Revenda(s) - ${mW} Via WhatsApp
+                        </div>
+                    </div>
+                </div>
+            `;
+      
+      }
+
+      function exportarPerformance() {
+        // Gera CSV do historicoCache filtrado
+        let csvContent = "DATA;CLIENTE;RESULTADO;VALOR;MOTIVO\n";
+        historicoCache
+          .filter((v) => v.status_contato === "FINALIZADO")
+          .forEach((v) => {
+            let linha = [
+              v.data_venda,
+              v.clientes.nome,
+              v.resultado_contato,
+              v.valor_total,
+              v.motivo_perda || "-",
+            ].join(";");
+            csvContent += linha + "\n";
+          });
+        const blob = new Blob(["\uFEFF" + csvContent], {
+          type: "text/csv;charset=utf-8;",
+        });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `performance.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
+      // --- CONTROLE CRUD (Supabase) ---
+      // --- CONTROLE CRUD (CORRIGIDO PARA EDITAR) ---
+
+      // Variáveis para controlar quem estamos editando
+      let idProdutoEdicao = null;
+      let idUsuarioEdicao = null;
+
+      // --- GESTÃO DE PRODUTOS ---
+      async function renderizarTabelaProdutos() {
+        const { data } = await _supabase
+          .from("produtos")
+          .select("*")
+          .order("nome");
+        produtosCache = data || [];
+
+        const tb = document.getElementById("tabela-gestao-produtos");
+        tb.innerHTML = "";
+
+        produtosCache.forEach((p, index) => {
+          // Adiciona evento de clique na linha
+          tb.innerHTML += `
+                    <tr onclick="preencherFormProduto(${index})" style="cursor:pointer; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
+                        <td>${p.id}</td>
+                        <td>${p.nome}</td>
+                        <td>R$ ${p.preco_padrao.toLocaleString("pt-BR", {minimumFractionDigits: 2,})}</td>
+                        <td><span class="material-icons-round" style="font-size:16px; color:var(--primary)">edit</span></td>
+                    </tr>`;
+        });
+      }
+
+      function preencherFormProduto(index) {
+        const p = produtosCache[index];
+        if (!p) return;
+
+        // 1. Preenche os campos
+        document.getElementById("prod-nome").value = p.nome;
+        document.getElementById("input-preco-padrao").value = p.preco_padrao.toLocaleString("pt-BR", {minimumFractionDigits: 2,});
+
+        // 2. Guarda o ID para saber que é uma EDIÇÃO
+        idProdutoEdicao = p.id;
+
+        // 3. Muda o texto do botão visualmente (Opcional, se tiver ID no botão ajuda)
+        // Se o seu botão tiver id="btn-salvar-prod", poderiamos mudar o texto.
+        showToast(`Editando: ${p.nome}`, "info");
+      }
+
+      async function salvarProduto() {
+        const nome = document.getElementById("prod-nome").value;
+        const preco = document.getElementById("input-preco-padrao").value;
+
+
+        // 1. LIMPA A FORMATAÇÃO PARA SALVAR
+          // Remove "R$", remove pontos, e troca vírgula por ponto
+          // Resultado final: 24700.00 (Número puro)
+          let precoNumerico = parseFloat(
+              preco
+              .replace("R$", "")       // Tira o simbolo
+              .replace(/\./g, "")      // Tira os pontos de milhar
+              .replace(",", ".")       // Troca virgula por ponto
+              .trim()                  // Tira espaços
+          );
+
+        if (!nome || isNaN(precoNumerico))
+          return showToast("Preencha os campos corretamente.", "warning");
+
+
+        if (idProdutoEdicao) {
+          // --- MODO EDIÇÃO (UPDATE) ---
+          const { error } = await _supabase
+            .from("produtos")
+            .update({ nome: nome, preco_padrao: precoNumerico })
+            .eq("id", idProdutoEdicao); // <--- AQUI ESTÁ O SEGREDO
+
+          if (error) return showToast("Erro ao atualizar.", "error");
+          showToast("Produto atualizado!", "success");
+        } else {
+          // --- MODO CRIAÇÃO (INSERT) ---
+          const { error } = await _supabase
+            .from("produtos")
+            .insert([{ nome: nome, preco_padrao: precoNumerico }]);
+
+          if (error) return showToast("Erro ao criar.", "error");
+          showToast("Produto criado!", "success");
+        }
+
+        limparFormProduto(); // Limpa tudo
+        renderizarTabelaProdutos(); // Recarrega lista
+        carregarProdutos(); // Atualiza select de vendas
+      }
+
+      function limparFormProduto() {
+        document.getElementById("prod-nome").value = "";
+        document.getElementById("input-preco-padrao").value = "";
+        idProdutoEdicao = null; // Reseta para modo criação
+      }
+
+      // --- GESTÃO DE USUÁRIOS ---
+      async function renderizarTabelaUsuarios() {
+        const { data } = await _supabase
+          .from("usuarios")
+          .select("*")
+          .order("nome");
+        usuariosCache = data || [];
+
+        const tb = document.getElementById("tabela-gestao-usuarios");
+        tb.innerHTML = "";
+
+        usuariosCache.forEach((u, index) => {
+          tb.innerHTML += `
+                    <tr onclick="preencherFormUsuario(${index})" style="cursor:pointer; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
+                        <td>${u.nome}</td>
+                        <td>${u.login}</td>
+                        <td>${u.perfil}</td>
+                        <td><span class="material-icons-round" style="font-size:16px; color:var(--primary)">edit</span></td>
+                    </tr>`;
+        });
+      }
+
+      function preencherFormUsuario(index) {
+        const u = usuariosCache[index];
+        if (!u) return;
+
+        document.getElementById("user-nome").value = u.nome;
+        document.getElementById("user-login").value = u.login;
+        document.getElementById("user-senha").value = u.senha;
+        document.getElementById("user-perfil").value = u.perfil;
+
+        idUsuarioEdicao = u.id; // Guarda ID
+        showToast(`Editando usuário: ${u.nome}`, "info");
+      }
+
+      async function salvarUsuario() {
+        const nome = document.getElementById("user-nome").value;
+        const login = document.getElementById("user-login").value;
+        const senha = document.getElementById("user-senha").value;
+        const perfil = document.getElementById("user-perfil").value;
+
+        if (!nome || !login || !senha)
+          return showToast("Preencha todos os campos.", "warning");
+
+        if (idUsuarioEdicao) {
+          // --- UPDATE ---
+          const { error } = await _supabase
+            .from("usuarios")
+            .update({ nome, login, senha, perfil })
+            .eq("id", idUsuarioEdicao);
+
+          if (error) return showToast("Erro ao atualizar usuário.", "error");
+          showToast("Usuário atualizado!", "success");
+        } else {
+          // --- INSERT ---
+          const { error } = await _supabase
+            .from("usuarios")
+            .insert([{ nome, login, senha, perfil }]);
+
+          if (error) return showToast("Erro ao criar usuário.", "error");
+          showToast("Usuário criado!", "success");
+        }
+
+        limparFormUsuario();
+        renderizarTabelaUsuarios();
+      }
+
+      function limparFormUsuario() {
+        document.getElementById("user-nome").value = "";
+        document.getElementById("user-login").value = "";
+        document.getElementById("user-senha").value = "";
+        idUsuarioEdicao = null; // Reseta ID
+      }
+
+      function toggleVisualizarSenha() {
+        const input = document.getElementById("user-senha");
+        const icon = document.getElementById("icon-ver-senha");
+
+        if (input.type === "password") {
+          // Mostra a senha
+          input.type = "text";
+          icon.innerText = "visibility_off"; // Muda ícone para 'olho cortado'
+          icon.style.color = "var(--primary)";
+        } else {
+          // Esconde a senha
+          input.type = "password";
+          icon.innerText = "visibility"; // Volta para 'olho normal'
+          icon.style.color = "#888";
+        }
+      }
+
+      // --- FUNÇÕES DE WHATSAPP ---
+
+      function toggleBotaoWhats() {
+        const select = document.getElementById("meio-contato");
+        const btn = document.getElementById("btn-enviar-whats");
+
+        if (select.value === "WHATSAPP") {
+          btn.classList.remove("hidden");
+        } else {
+          btn.classList.add("hidden");
+        }
+      }
+
+      function enviarMensagemWhatsApp() {
+    if (!vendaEmAtendimento) return;
+
+    // 1. Limpeza e Validação do Telefone
+    let telefone = (vendaEmAtendimento.clientes.telefone || "").replace(/\D/g, "");
+
+    if (!telefone || telefone.length < 10) {
+        return showToast("Cliente sem telefone válido.", "warning");
+    }
+
+    if (telefone.length <= 11) {
+        telefone = "55" + telefone;
+    }
+
+    // 2. Dados do Cliente e Vendedor
+    const primeiroNome = vendaEmAtendimento.clientes.nome.split(" ")[0];
+    const nomeAtendente = usuarioLogado.nome;
+
+    // 3. Formata Data da Compra
+    const dataCompra = new Date(vendaEmAtendimento.data_venda).toLocaleDateString('pt-BR');
+
+    // 4. Monta Lista de Produtos com formatação segura
+    let listaProdutos = "";
+    if (vendaEmAtendimento.itens_venda && vendaEmAtendimento.itens_venda.length > 0) {
+        listaProdutos = vendaEmAtendimento.itens_venda
+            .map(item => `  - ${item.produtos.nome}`) // Usa traço para lista, funciona bem no Whats
+            .join('\n');
+    } else {
+        listaProdutos = "  - Diversos";
+    }
+
+    // 5. BANCO DE EMOJIS (Código Hexadecimal Seguro)
+    // Isso evita problemas de codificação do arquivo
+    const EMOJI = {
+        MAO:      String.fromCodePoint(0x1F44B), // 👋
+        REMEDIO:  String.fromCodePoint(0x1F48A), // 💊
+        FELIZ:    String.fromCodePoint(0x1F60A), // 😊
+        CALEND:   String.fromCodePoint(0x1F4C5), // 📅
+        SACOLA:   String.fromCodePoint(0x1F6CD), // 🛍️
+        ATENCAO:  String.fromCodePoint(0x26A0),  // ⚠️
+        CHECK:    String.fromCodePoint(0x2705)   // ✅
+    };
+
+    // 6. MONTAGEM DO TEXTO (Usando Template String)
+    // O \n cria a quebra de linha real no WhatsApp
+    const mensagem = 
+`Olá, *${primeiroNome}*! Tudo bem? ${EMOJI.MAO}
+Aqui é o *${nomeAtendente}* da Farmácia Risca.
+
+Estou acompanhando sua compra realizada em *${dataCompra}* ${EMOJI.CALEND}
+Produtos:
+${listaProdutos}
+
+Como você está se sentindo com o tratamento? ${EMOJI.REMEDIO}
+O medicamento está fazendo o efeito esperado? Sentiu algum  🤪  desconforto?
+
+Notei por aqui que seus produtos podem estar chegando ao fim... Que tal já garantirmos a reposição para não interromper seu cuidado? ${EMOJI.SACOLA}
+
+Se quiser, já separo tudo para você agora mesmo! O que acha? ${EMOJI.FELIZ}`;
+
+    // 7. ENVIO
+    // encodeURIComponent é OBRIGATÓRIO para transformar quebras de linha e emojis em link
+    const linkZap = `https://wa.me/${telefone}?text=${encodeURIComponent(mensagem)}`;
+    
+    window.open(linkZap, "_blank");
+}
+
+      // --- FUNÇÃO DE EXPORTAÇÃO PDF ---
+// --- FUNÇÃO DE EXPORTAÇÃO PDF (CORRIGIDA: BARRA VOLTA AO NORMAL) ---
+// --- FUNÇÃO DE EXPORTAÇÃO PDF (ALTA FIDELIDADE + TAMANHO DINÂMICO) ---
+
+// --- FUNÇÃO DE EXPORTAÇÃO PDF NATIVA (VETORIAL / MÁXIMA QUALIDADE) ---
+// --- FUNÇÃO DE EXPORTAÇÃO PDF NATIVA (VETORIAL) - FINAL ---
+// --- FUNÇÃO DE EXPORTAÇÃO PDF NATIVA (FINAL - MEDALHAS COLORIDAS) ---
+// --- FUNÇÃO DE EXPORTAÇÃO PDF NATIVA (FINAL - COLUNAS CORRIGIDAS) ---
+async function exportarRelatorioPDF() {
+    const { jsPDF } = window.jspdf;
+    
+    // Configuração A4 Paisagem
+    const doc = new jsPDF('l', 'mm', 'a4');
+    
+    // --- DADOS PARA O CABEÇALHO ---
+    const hoje = new Date().toLocaleDateString('pt-BR');
+    const inputIni = document.getElementById("kpi-ini").value;
+    const inputFim = document.getElementById("kpi-fim").value;
+    const dtIniFmt = inputIni ? new Date(inputIni).toLocaleDateString('pt-BR') : 'Início';
+    const dtFimFmt = inputFim ? new Date(inputFim).toLocaleDateString('pt-BR') : 'Hoje';
+
+    // Feedback
+    showToast("Gerando PDF Completo...", "info");
+
+    // --- 1. CABEÇALHO ---
+    doc.setFillColor(15, 23, 42); 
+    doc.rect(0, 0, 297, 30, 'F'); 
+    
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.setTextColor(255, 255, 255);
+    doc.text("Relatório de Performance - Risca", 14, 18);
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Gerado em: ${hoje}  |  Período: ${dtIniFmt} até ${dtFimFmt}`, 14, 25);
+
+    // --- 2. CAPTURA DOS KPIS ---
+    const kpiConversao = document.getElementById("kpi-conversao").innerText;
+    const kpiFaturamento = document.getElementById("kpi-faturamento").innerText;
+    const kpiRevendas = document.getElementById("kpi-revendas").innerText;
+    const kpiPerdas = document.getElementById("kpi-perdas").innerText;
+    const kpiTotal = document.getElementById("kpi-total").innerText;
+
+    function desenharCard(x, titulo, valor, corBarra) {
+        doc.setFillColor(255, 255, 255);
+        doc.setDrawColor(220, 220, 220);
+        doc.roundedRect(x, 40, 50, 30, 2, 2, 'FD'); 
+        
+        doc.setDrawColor(corBarra);
+        doc.setLineWidth(1);
+        doc.line(x+1, 69, x+49, 69); 
+
+        doc.setFontSize(8);
+        doc.setTextColor(100, 100, 100);
+        doc.text(titulo, x + 3, 48);
+
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(40, 40, 40);
+        doc.text(valor, x + 3, 60);
+    }
+
+    desenharCard(14, "Taxa Conversão", kpiConversao, "#3b82f6");
+    desenharCard(70, "Faturamento", kpiFaturamento, "#22c55e");
+    desenharCard(126, "Revendas", kpiRevendas, "#7c3aed");
+    desenharCard(182, "Perdas", kpiPerdas, "#ef4444");
+    desenharCard(238, "Total Contatos", kpiTotal, "#64748b");
+
+    // --- 3. TABELA DE RANKING (CORRIGIDA - 7 COLUNAS) ---
+    doc.setFontSize(14);
+    doc.setTextColor(40, 40, 40);
+    doc.text("Ranking de Atendentes", 14, 85);
+
+    const linhasTabela = [];
+    
+    const trs = document.querySelectorAll("#ranking-atendentes tr");
+    trs.forEach((tr, index) => {
+        const colunas = tr.querySelectorAll("td");
+        if(colunas.length >= 7) { // Garante que tem as 7 colunas
+            linhasTabela.push([
+                `${index + 1}º`, // Pos
+                colunas[1].innerText.trim(), // Atendente
+                colunas[2].innerText.trim(), // Atendimentos
+                colunas[3].innerText.trim(), // Vendas
+                colunas[4].innerText.trim(), // Conversão
+                colunas[5].innerText.replace("⌛ Calculando...", "").trim(), // Faturamento
+                colunas[6].innerText.replace("⌛ Calculando...", "").trim()  // Ticket Médio
+            ]);
+        }
+    });
+
+    if (linhasTabela.length === 0) {
+        linhasTabela.push(["-", "Sem dados", "-", "-", "-", "-", "-"]);
+    }
+
+    doc.autoTable({
+        startY: 90,
+        // Cabeçalho com as 7 colunas corretas
+        head: [['Pos.', 'Atendente', 'Atendimentos', 'Vendas', 'Conversão', 'Faturamento', 'Ticket Médio']],
+        body: linhasTabela,
+        theme: 'grid',
+        headStyles: { fillColor: [241, 245, 249], textColor: [71, 85, 105], fontStyle: 'bold', halign: 'center' },
+        styles: { fontSize: 9, cellPadding: 3, valign: 'middle' },
+        columnStyles: {
+            0: { cellWidth: 15, halign: 'center', fontStyle: 'bold' }, // Pos
+            1: { fontStyle: 'bold' }, // Atendente
+            2: { halign: 'center' }, // Atendimentos
+            3: { halign: 'center', textColor: [22, 163, 74], fontStyle: 'bold' }, // Vendas (Verde)
+            4: { halign: 'center' }, // Conversão
+            5: { halign: 'right' },  // Faturamento
+            6: { halign: 'right' }   // Ticket Médio
+        },
+        // Cores das Medalhas
+        didParseCell: function (data) {
+            if (data.section === 'body' && data.column.index === 0) {
+                if (data.row.index === 0) {
+                    data.cell.styles.fillColor = [255, 215, 0]; // Ouro
+                    data.cell.styles.textColor = [255, 255, 255];
+                } else if (data.row.index === 1) {
+                    data.cell.styles.fillColor = [192, 192, 192]; // Prata
+                    data.cell.styles.textColor = [255, 255, 255];
+                } else if (data.row.index === 2) {
+                    data.cell.styles.fillColor = [205, 127, 50]; // Bronze
+                    data.cell.styles.textColor = [255, 255, 255];
+                }
+            }
+        }
+    });
+
+    let yFinalTabela = doc.lastAutoTable.finalY + 15;
+    
+    if (yFinalTabela > 170) {
+        doc.addPage();
+        yFinalTabela = 20;
+    }
+
+    // --- 4. RESUMO DE PERDAS ---
+    doc.setFontSize(14);
+    doc.setTextColor(40, 40, 40);
+    doc.text("Resumo de Perdas", 14, yFinalTabela);
+
+    const dadosPerda = [];
+    const containerGrafico = document.getElementById("chart-motivos");
+    
+    if (containerGrafico) {
+        const divsBarras = containerGrafico.children;
+        for (let i = 0; i < divsBarras.length; i++) {
+            const linhaTexto = divsBarras[i].firstElementChild; 
+            if (linhaTexto) {
+                const spans = linhaTexto.querySelectorAll("span");
+                if (spans.length >= 2) {
+                    dadosPerda.push([spans[0].innerText.trim(), spans[1].innerText.trim()]);
+                }
+            }
+        }
+    }
+
+    if (dadosPerda.length > 0) {
+        doc.autoTable({
+            startY: yFinalTabela + 5,
+            head: [['Motivo', 'Qtd / %']],
+            body: dadosPerda,
+            theme: 'striped',
+            tableWidth: 120, 
+            styles: { fontSize: 10 },
+            headStyles: { fillColor: [239, 68, 68], halign: 'center' } 
+        });
+    } else {
+        doc.setFontSize(10);
+        doc.text("Nenhuma perda.", 14, yFinalTabela + 10);
+    }
+
+    // --- 5. CONVERSÃO POR CANAL ---
+    doc.setFontSize(14);
+    doc.setTextColor(40, 40, 40);
+    doc.text("Vendas por Canal", 160, yFinalTabela);
+
+    const dadosCanais = [];
+    const containerCanais = document.getElementById("chart-canais");
+
+    if (containerCanais) {
+        const linhas = containerCanais.innerText.split('\n');
+        linhas.forEach(linha => {
+            if(linha.includes("Via")) {
+                const partes = linha.split("-");
+                if(partes.length >= 2) {
+                    const infoCanal = partes[1].trim(); 
+                    const match = infoCanal.match(/(\d+)\s+Via\s+(.+)/i);
+                    if(match) {
+                        dadosCanais.push([match[2], match[1]]); 
+                    } else {
+                        dadosCanais.push([infoCanal, ""]);
+                    }
+                }
+            }
+        });
+    }
+
+    if (dadosCanais.length > 0) {
+        doc.autoTable({
+            startY: yFinalTabela + 5,
+            head: [['Canal', 'Vendas Realizadas']],
+            body: dadosCanais,
+            theme: 'striped',
+            tableWidth: 120,
+            margin: { left: 160 },
+            styles: { fontSize: 10, halign: 'center' },
+            headStyles: { fillColor: [59, 130, 246], halign: 'center' }
+        });
+    } else {
+        doc.setFontSize(10);
+        doc.text("Sem dados de canais.", 160, yFinalTabela + 10);
+    }
+
+    // --- 6. RODAPÉ ---
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text('Sistema Risca - Documento Confidencial', 14, 205);
+        doc.text(`Página ${i} de ${pageCount}`, 280, 205, { align: 'right' });
+    }
+
+    doc.save(`Relatorio_Risca_Completo_${hoje.replace(/\//g, '-')}.pdf`);
+    showToast("PDF Completo gerado!", "success");
+}
+
+</script>
+  </body>
+</html>
