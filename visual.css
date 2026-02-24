@@ -1,4 +1,4 @@
-/* (MANTIVE O MESMO CSS DO DESIGN ANTERIOR PARA NÃO PERDER O VISUAL) */
+/* --- visual.css --- */
 :root {
   --primary: #4f46e5;
   --primary-hover: #4338ca;
@@ -78,16 +78,23 @@ body {
   margin: 30px auto 20px;
   padding: 0 20px;
 }
+
+/* Aba Responsiva */
 .tabs-wrapper {
-  width: 100%; /* Força ocupar toda a largura disponível */
-  display: inline-flex;
+  width: 100%;
+  display: flex;
   background: #e2e8f0;
   padding: 5px;
   border-radius: 12px;
-
-  display: flex; /* Alinha os botões lado a lado */
-  gap: 10px; /* Espaço entre os botões */
-  margin-bottom: 15px; /* Espaço antes do card */
+  gap: 10px;
+  margin-bottom: 15px;
+  /* Scroll no mobile */
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none; /* Oculta scrollbar Firefox */
+}
+.tabs-wrapper::-webkit-scrollbar {
+  display: none; /* Oculta scrollbar Chrome/Safari */
 }
 .tab-btn {
   padding: 10px 24px;
@@ -101,6 +108,7 @@ body {
   align-items: center;
   gap: 8px;
   transition: 0.3s;
+  flex-shrink: 0; /* Impede os botões de esmagarem no celular */
 }
 .tab-btn.active {
   background: white;
@@ -119,6 +127,7 @@ body {
 .tab-pane.active {
   display: block;
 }
+
 @keyframes slideUp {
   from {
     opacity: 0;
@@ -129,6 +138,7 @@ body {
     transform: translateY(0);
   }
 }
+
 .card {
   background: var(--bg-card);
   border-radius: var(--radius);
@@ -149,6 +159,7 @@ body {
   font-size: 1.1rem;
   font-weight: 600;
 }
+
 .filter-bar {
   display: flex;
   gap: 15px;
@@ -191,6 +202,7 @@ select:focus {
   background: white;
   border-color: var(--primary);
 }
+
 .btn {
   padding: 10px 20px;
   border: none;
@@ -229,6 +241,7 @@ select:focus {
   cursor: not-allowed;
   border: 1px solid #cbd5e1;
 }
+
 .table-responsive {
   overflow-x: auto;
   border-radius: 8px;
@@ -247,6 +260,7 @@ th {
   font-size: 0.85rem;
   text-transform: uppercase;
   font-weight: 600;
+  white-space: nowrap;
 }
 td {
   padding: 16px;
@@ -256,6 +270,7 @@ td {
 tr:hover td {
   background: #f8fafc;
 }
+
 .badge {
   padding: 4px 10px;
   border-radius: 20px;
@@ -263,39 +278,12 @@ tr:hover td {
   font-weight: 700;
   text-transform: uppercase;
   display: inline-block;
-}
-.badge-alert {
-  background: #fee2e2;
-  color: #991b1b;
-}
-.badge-warning {
-  background: #fef3c7;
-  color: #b45309;
-}
-.badge-success {
-  background: #dcfce7;
-  color: #166534;
-}
-.badge-gray {
-  background: #e2e8f0;
-  color: #475569;
-}
-.badge-revenda {
-  background: var(--revenda);
-  color: white;
-}
-.badge-normal {
-  background: #e2e8f0;
-  color: #475569;
-}
-.badge-wait {
-  background: #f3f4f6;
-  color: #6b7280;
-  border: 1px solid #d1d5db;
+  white-space: nowrap;
 }
 .hidden {
   display: none !important;
 }
+
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -331,29 +319,7 @@ tr:hover td {
   opacity: 0.1;
   color: var(--primary);
 }
-.chart-bar-container {
-  margin-bottom: 15px;
-}
-.chart-label {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.9rem;
-  margin-bottom: 5px;
-  font-weight: 500;
-}
-.chart-bg {
-  height: 12px;
-  background: #e2e8f0;
-  border-radius: 6px;
-  overflow: hidden;
-}
-.chart-fill {
-  height: 100%;
-  background: var(--primary);
-  border-radius: 6px;
-  width: 0%;
-  transition: width 0.5s ease;
-}
+
 .modal-overlay {
   display: none;
   position: fixed;
@@ -371,8 +337,8 @@ tr:hover td {
   background: white;
   padding: 30px;
   border-radius: 16px;
-  width: 600px;
-  max-width: 90%;
+  width: 90%;
+  max-width: 600px;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
   animation: zoomIn 0.2s ease;
   max-height: 90vh;
@@ -388,6 +354,7 @@ tr:hover td {
     opacity: 1;
   }
 }
+
 .checkbox-wrapper {
   display: flex;
   align-items: center;
@@ -405,10 +372,11 @@ tr:hover td {
   width: auto;
   margin: 0;
 }
+
 #modal-settings .modal-box {
   position: absolute;
   top: 80px;
-  right: 40px;
+  right: 20px;
   width: 220px;
   padding: 10px;
   transform-origin: top right;
@@ -467,55 +435,186 @@ tr:hover td {
 }
 
 .btn-nova-venda-lindo {
-  /* Formato e Tamanho */
   display: flex;
   align-items: center;
-  gap: 10px; /* Espaço entre ícone e texto */
+  gap: 10px;
   padding: 15px 40px;
-  border-radius: 50px; /* Deixa bem redondo nas pontas */
+  border-radius: 50px;
   border: none;
-
-  /* Cor e Fundo (Gradiente Bonito) */
   background: linear-gradient(135deg, #22c55e 0%, #15803d 100%);
   color: white;
-
-  /* Texto */
   font-size: 1.1rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   cursor: pointer;
-
-  /* Sombra Suave (Glow) */
   box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);
-
-  /* Animação */
   transition: all 0.3s ease;
 }
-
-/* Efeito ao passar o mouse (Hover) */
 .btn-nova-venda-lindo:hover {
-  transform: translateY(-3px); /* Sobe levemente */
-  box-shadow: 0 8px 25px rgba(34, 197, 94, 0.6); /* Sombra aumenta e brilha */
-  filter: brightness(1.1); /* Fica mais claro */
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(34, 197, 94, 0.6);
+  filter: brightness(1.1);
 }
-
-/* Efeito ao clicar */
 .btn-nova-venda-lindo:active {
-  transform: translateY(1px); /* Desce */
+  transform: translateY(1px);
   box-shadow: 0 2px 10px rgba(34, 197, 94, 0.3);
 }
 
-/* --- ESTADO DE CANCELAR (VERMELHO) --- */
-/* Quando adicionamos a classe 'cancelar' pelo JS, ele muda para vermelho */
-.btn-nova-venda-estilo-lindo-cancelar {
-  /* Gradiente Vermelho */
-  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
-
-  /* Sombra Vermelha */
-  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+/* Novas Classes CSS para Layouts Responsivos (Substituindo estilos inline) */
+.grid-2-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.grid-btn-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.flex-row-mobile-col {
+  display: flex;
+  gap: 10px;
 }
 
-.btn-nova-venda-estilo-lindo-cancelar:hover {
-  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.6);
+/* =======================================================
+   REGRAS DE RESPONSIVIDADE (CELULARES E TABLETS MENORES)
+   ======================================================= */
+@media (max-width: 768px) {
+  /* Topo e Navegação */
+  .top-bar {
+    padding: 0 15px;
+  }
+  .brand h6 {
+    display: none;
+  } /* Esconde o subtítulo grande no celular */
+  .nav-container {
+    margin-top: 20px;
+    padding: 0 10px;
+  }
+  .main-content {
+    padding: 0 10px 20px;
+  }
+
+  /* Cards e Modais */
+  .card {
+    padding: 15px;
+  }
+  .modal-box {
+    padding: 20px;
+    width: 95%;
+    max-width: none;
+  }
+
+  /* Formulários e Filtros viram Colunas */
+  .filter-bar,
+  .row-config {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .filter-bar .form-group,
+  .row-config .form-group {
+    width: 100%;
+  }
+
+  /* Grids de 2 colunas viram 1 coluna */
+  .grid-2-col {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  .grid-btn-2 {
+    grid-template-columns: 1fr;
+  } /* Botões um embaixo do outro no Modal */
+  .flex-row-mobile-col {
+    flex-direction: column;
+  }
+
+  /* Botões e Tabelas */
+  .btn {
+    width: 100%;
+    justify-content: center;
+  } /* Botões em 100% no mobile */
+  .btn-nova-venda-lindo {
+    width: 100%;
+    padding: 15px 20px;
+    font-size: 1rem;
+  }
+
+  /* Fixa botões de paginação no Histórico */
+  .d-flex.justify-content-between.align-items-center {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start !important;
+  }
+}
+
+/* --- ESTILOS DAS ANOTAÇÕES --- */
+.notas-container {
+  margin-top: 15px;
+  border-top: 1px solid var(--border);
+  padding-top: 15px;
+}
+
+.lista-notas {
+  max-height: 200px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding-right: 5px;
+}
+
+.nota-item {
+  background: #fff;
+  border: 1px solid var(--border);
+  padding: 10px;
+  border-radius: 8px;
+  position: relative;
+  font-size: 0.9rem;
+}
+
+.nota-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.nota-texto {
+  color: var(--text-main);
+  white-space: pre-wrap; /* Mantém quebras de linha */
+  line-height: 1.4;
+}
+
+.nota-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.nota-btn-icon {
+  cursor: pointer;
+  font-size: 14px !important;
+  transition: 0.2s;
+}
+.nota-btn-icon:hover {
+  transform: scale(1.2);
+}
+.text-blue {
+  color: var(--primary);
+}
+.text-red {
+  color: var(--danger);
+}
+
+/* Scrollbar fina para as notas */
+.lista-notas::-webkit-scrollbar {
+  width: 4px;
+}
+.lista-notas::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
 }
